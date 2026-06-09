@@ -1,0 +1,511 @@
+{
+  "name": "Tablets",
+  "version": 1,
+  "items": [
+    {
+      "id": 1,
+      "name": "Hope",
+      "effects": [
+        [1, 0, 1]
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Miracle",
+      "lineBuff": [
+        {
+          "axis": "row",
+          "ref": "self",
+          "buff": 1
+        },
+        {
+          "axis": "column",
+          "ref": "self",
+          "buff": 1
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Transference",
+      "lineBuff": [
+        {
+          "axis": "row",
+          "ref": "self",
+          "buff": 1
+        },
+        {
+          "axis": "column",
+          "ref": "self",
+          "buff": -1
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Exploitation",
+      "effects": [
+        [1, 0, 1],
+        [-1, 0, -1]
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Cohesion",
+      "lineBuff": [
+        {
+          "axis": "row",
+          "ref": "self",
+          "buff": -1
+        }
+      ],
+      "effects": [
+        [0, 1, 3]
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Good Will",
+      "disableRotate": true,
+      "activationPosition": [
+        "bottom"
+      ],
+      "effects": [
+        [1, 0, 1],
+        [-1, 0, 1]
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Justice",
+      "disableRotate": true,
+      "activationPosition": [
+        "left",
+        "right"
+      ],
+      "lineBuff": [
+        {
+          "axis": "column",
+          "ref": "self",
+          "buff": 1
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Unity",
+      "effects": [
+        [1, 0, 1],
+        [-1, 0, -1],
+        [0, 1, -1],
+        [1, 0, 1]
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Destiny",
+      "disableRotate": true,
+      "effects": [
+        [0, -1, 1]
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Chivalry",
+      "effects": [
+        [-1, 2, 1]
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Wit",
+      "effects": [
+        [-1, 1, 1]
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Gaze",
+      "effects": [
+        [-1, 1, 1],
+        [1, -1, -1]
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Pulsation",
+      "effects": [
+        [0, 2, 2]
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Nurture",
+      "effects": [
+        [-1, 1, 1],
+        [0, 1, 1],
+        [1, 1, 1],
+        [0, -1, -1],
+        [0, -2, -1]
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Shade",
+      "disableRotate": true,
+      "activationPosition": [
+        "top"
+      ],
+      "lineBuff": [
+        {
+          "axis": "row",
+          "ref": "bottom",
+          "buff": 1
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Binary Star",
+      "effects": [
+        [0, 2, 2],
+        [0, -2, 2]
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Link",
+      "effects": [
+        [0, 1, 2]
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Competition",
+      "effects": [
+        [-1, 1, -1],
+        [0, 1, -1],
+        [0, -1, 2]
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Desire",
+      "disableRotate": true,
+      "effects": [
+        [0, 1, 2]
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Advent",
+      "effects": [
+        [0, 1, 1],
+        [0, 2, 1],
+        [0, -1, -1],
+        [0, -2, -1]
+      ]
+    },
+    {
+      "id": 21,
+      "name": "Vigilance",
+      "disableRotate": true,
+      "lineBuff": [
+        {
+          "axis": "row",
+          "ref": "top",
+          "buff": 1
+        },
+        {
+          "axis": "row",
+          "ref": "bottom",
+          "buff": 1
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "name": "Wave",
+      "effects": [
+        [1, 1, 2],
+        [1, 0, -1],
+        [0, 1, -1]
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Trick",
+      "effects": [
+        [-1, 1, 1],
+        [0, 1, 1],
+        [1, 1, 1],
+        [-1, 0, -1],
+        [1, 0, -1]
+      ]
+    },
+    {
+      "id": 24,
+      "name": "Dedication",
+      "effects": [
+        [1, 1, 1],
+        [1, -1, 1],
+        [-1, 1, 1],
+        [-1, -1, 1]
+      ]
+    },
+    {
+      "id": 25,
+      "name": "Cheers",
+      "disableRotate": true,
+      "effects": [
+        [0, 1, 1]
+      ]
+    },
+    {
+      "id": 26,
+      "name": "Harvest",
+      "effects": [
+        [0, 1, 2],
+        [0, -1, 2]
+      ]
+    },
+    {
+      "id": 27,
+      "name": "Advance",
+      "effects": [
+        [0, 1, 1],
+        [0, 2, 1],
+        [0, 3, 1]
+      ]
+    },
+    {
+      "id": 28,
+      "name": "Foundation",
+      "disableRotate": true,
+      "lineBuff": [
+        {
+          "axis": "row",
+          "ref": "self",
+          "buff": 1
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "name": "Distribution",
+      "disableRotate": true,
+      "effects": [
+        [-1, 0, 1],
+        [1, 0, 1],
+        [0, -1, 1],
+        [0, 1, 1]
+      ]
+    },
+    {
+      "id": 30,
+      "name": "Three-Headed",
+      "disableRotate": true,
+      "effects": [
+        [-1, 0, 1],
+        [1, 0, 1],
+        [0, 1, 1]
+      ]
+    },
+    {
+      "id": 31,
+      "name": "Past",
+      "effects": [
+        [-1, 1, 1],
+        [0, 1, 1],
+        [1, 0, 1],
+        [1, 0, 1]
+      ]
+    },
+    {
+      "id": 32,
+      "name": "Future",
+      "effects": [
+        [1, 1, 1],
+        [0, 1, 1],
+        [-1, 0, 1],
+        [-1, 0, 1]
+      ]
+    },
+    {
+      "id": 33,
+      "name": "Stack",
+      "effects": [
+        [-1, 1, 1],
+        [-1, 2, 1],
+        [0, 1, 1],
+        [0, 2, 1]
+      ]
+    },
+    {
+      "id": 34,
+      "name": "Brilliance",
+      "disableRotate": true,
+      "lineBuff": [
+        {
+          "axis": "row",
+          "ref": "self",
+          "buff": 1
+        }
+      ],
+      "effects": [
+        [0, -1, 2],
+        [0, 1, 2]
+      ]
+    },
+    {
+      "id": 35,
+      "name": "Handshake",
+      "effects": [
+        [0, -1, 1],
+        [0, 1, 1]
+      ]
+    },
+    {
+      "id": 36,
+      "name": "Approximation",
+      "effects": [
+        [1, 0, 1],
+        [0, 1, 1]
+      ]
+    },
+    {
+      "id": 37,
+      "name": "Power",
+      "effects": [
+        [0, 1, 3]
+      ]
+    },
+    {
+      "id": 38,
+      "name": "Compression",
+      "effects": [
+        [0, 1, 3],
+        [0, 2, 2],
+        [0, 3, 1]
+      ]
+    },
+    {
+      "id": 39,
+      "name": "Dry",
+      "disableRotate": true,
+      "effects": [
+        [0, -1, 1],
+        [0, 1, 1]
+      ]
+    },
+    {
+      "id": 40,
+      "name": "Simultaneity",
+      "disableRotate": true,
+      "lineBuff": [
+        {
+          "axis": "column",
+          "ref": "self",
+          "buff": 1
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "name": "Disconnection",
+      "disableRotate": true,
+      "effects": [
+        [-1, 0, -1],
+        [1, 0, -1],
+        [0, -1, 3],
+        [0, 1, 3]
+      ]
+    },
+    {
+      "id": 42,
+      "name": "Daydream",
+      "effects": [
+        [-1, 1, 1],
+        [-1, 2, 1],
+        [-1, -1, 1],
+        [-1, -2, 1],
+        [1, 1, 1],
+        [1, 2, 1],
+        [1, -1, 1],
+        [1, -2, 1]
+      ]
+    },
+    {
+      "id": 43,
+      "name": "Spike",
+      "effects": [
+        [-1, 1, 1],
+        [-1, 0, 1],
+        [-1, -1, 1],
+        [0, 1, 2],
+        [0, -1, 2],
+        [1, 1, 1],
+        [1, 0, 1],
+        [1, -1, 1]
+      ]
+    },
+    {
+      "id": 44,
+      "name": "Rebellion",
+      "lineBuff": [
+        {
+          "axis": "diagonal",
+          "ref": "self",
+          "buff": 1
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "name": "Conviction",
+      "effects": [
+        [0, 1, 5]
+      ]
+    },
+    {
+      "id": 46,
+      "name": "Preparation",
+      "effects": [
+        [-1, 1, 1],
+        [1, -1, 1]
+      ]
+    },
+    {
+      "id": 47,
+      "name": "Entrance",
+      "disableRotate": true,
+      "effects": [
+        [-1, 1, 1],
+        [0, 1, 2],
+        [1, 1, 1]
+      ]
+    },
+    {
+      "id": 48,
+      "name": "Exit",
+      "disableRotate": true,
+      "effects": [
+        [-1, -1, 1],
+        [0, -1, 2],
+        [1, -1, 1]
+      ]
+    },
+    {
+      "id": 49,
+      "name": "Oaths",
+      "disableRotate": false,
+      "effects": [
+        [-1, 0, 1],
+        [1, 0, 1],
+        [0, -1, 1],
+        [0, 1, 1],
+        [0, 2, 2]
+      ]
+    }
+  ]
+}
