@@ -498,13 +498,52 @@
     {
       "id": 49,
       "name": "Oaths",
-      "disableRotate": false,
       "effects": [
         [-1, 0, 1],
         [1, 0, 1],
         [0, -1, 1],
         [0, 1, 1],
         [0, 2, 2]
+      ]
+    },
+    {
+        "id": 50,
+        "name": "Peace",
+        "effects": [
+          [-1, 0, 3],
+          [1, 0, 3]
+        ]
+    },
+    {
+      "id": 51,
+      "name": "Courage",
+      "lineBuff": [
+        {
+          "axis": "diagonal",
+          "ref": "self",
+          "buff": 1
+        }
+      ],
+      "effects": [
+        [1, 1, 2],
+        [-1, -1, 2]
+      ]
+    },
+    {
+        "id": 52,
+        "name": "Hospitality",
+        "disableRotate": true,
+        "effects": [
+          [-1, 0, 1],
+          [0, 1, 2]
+        ]
+    },
+    {
+      "id": 53,
+      "name": "Honor",
+      "effects": [
+        [0, 1, 2],
+        [-1, 2, 1]
       ]
     }
   ]
