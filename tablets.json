@@ -12,6 +12,7 @@
     {
       "id": 2,
       "name": "Miracle",
+      "effectiveRotations": [0],
       "lineBuff": [
         {
           "axis": "row",
@@ -28,6 +29,7 @@
     {
       "id": 3,
       "name": "Transference",
+      "effectiveRotations": [0, 1],
       "lineBuff": [
         {
           "axis": "row",
@@ -167,6 +169,7 @@
     {
       "id": 16,
       "name": "Binary Star",
+      "effectiveRotations": [0, 1],
       "effects": [
         [0, 2, 2],
         [0, -2, 2]
@@ -246,6 +249,7 @@
     {
       "id": 24,
       "name": "Dedication",
+      "effectiveRotations": [0],
       "effects": [
         [1, 1, 1],
         [1, -1, 1],
@@ -264,6 +268,7 @@
     {
       "id": 26,
       "name": "Harvest",
+      "effectiveRotations": [0, 1],
       "effects": [
         [0, 1, 2],
         [0, -1, 2]
@@ -344,7 +349,7 @@
     {
       "id": 34,
       "name": "Brilliance",
-      "disableRotate": true,
+      "effectiveRotations": [0, 1],
       "lineBuff": [
         {
           "axis": "row",
@@ -360,6 +365,7 @@
     {
       "id": 35,
       "name": "Handshake",
+      "effectiveRotations": [0, 1],
       "effects": [
         [0, -1, 1],
         [0, 1, 1]
@@ -424,6 +430,7 @@
     {
       "id": 42,
       "name": "Daydream",
+      "effectiveRotations": [0, 1],
       "effects": [
         [-1, 1, 1],
         [-1, 2, 1],
@@ -438,6 +445,7 @@
     {
       "id": 43,
       "name": "Spike",
+      "disableRotate": true,
       "effects": [
         [-1, 1, 1],
         [-1, 0, 1],
@@ -452,6 +460,7 @@
     {
       "id": 44,
       "name": "Rebellion",
+      "effectiveRotations": [0, 1],
       "lineBuff": [
         {
           "axis": "diagonal",
@@ -470,6 +479,7 @@
     {
       "id": 46,
       "name": "Preparation",
+      "effectiveRotations": [0, 1],
       "effects": [
         [-1, 1, 1],
         [1, -1, 1]
@@ -509,6 +519,7 @@
     {
         "id": 50,
         "name": "Peace",
+        "effectiveRotations": [0, 1],
         "effects": [
           [-1, 0, 3],
           [1, 0, 3]
@@ -517,6 +528,7 @@
     {
       "id": 51,
       "name": "Courage",
+      "effectiveRotations": [0, 1],
       "lineBuff": [
         {
           "axis": "diagonal",
