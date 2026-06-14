@@ -25,3 +25,6 @@ let appliedResultIdx = -1;
 // UI state
 let pickerExpanded = false;
 let tabletSortMode = 'id';
+
+// Merged tablets (created via merge dialog)
+let mergedTablets = [];

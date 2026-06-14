@@ -107,6 +107,50 @@ function computeBuffMap(placements, maxRow) {
 
 // ── Activation Check ─────────────────────────────────────────────
 
+// ── Merge Engine ─────────────────────────────────────────────────
+
+function createMergedTablet(tdA, rotA, tdB, rotB) {
+  // Bake each source's effects at its chosen rotation into a shared map
+  const combined = {};
+  function bakeEffects(td, rot) {
+    if (!td.effects) return;
+    for (const [ex, ey, buff] of td.effects) {
+      const [rx, ry] = rotateXY(ex, ey, rot);
+      const k = `${rx},${ry}`;
+      combined[k] = (combined[k] || 0) + buff;
+    }
+  }
+  bakeEffects(tdA, rotA);
+  bakeEffects(tdB, rotB);
+  const effects = Object.entries(combined)
+    .map(([k, buff]) => { const [dx, dy] = k.split(',').map(Number); return [dx, dy, buff]; });
+
+  // Carry lineBuffs with the self-ref axis pre-rotated
+  const lineBuff = [];
+  function bakeLineBuff(td, rot) {
+    if (!td.lineBuff) return;
+    for (const lb of td.lineBuff) {
+      let axis = lb.axis;
+      if (lb.ref === 'self' && rot % 2 === 1)
+        axis = axis === 'row' ? 'column' : axis === 'column' ? 'row' : axis;
+      lineBuff.push({ axis, ref: lb.ref, buff: lb.buff });
+    }
+  }
+  bakeLineBuff(tdA, rotA);
+  bakeLineBuff(tdB, rotB);
+
+  const id = `merged_${mergedTablets.length + 1}_${Date.now()}`;
+  return {
+    id,
+    name: `${tdA.name} + ${tdB.name}`,
+    spriteA: tdA.id,
+    spriteB: tdB.id,
+    disableRotate: true,
+    ...(effects.length  ? { effects }  : {}),
+    ...(lineBuff.length ? { lineBuff } : {}),
+  };
+}
+
 function checkActivation(td, col, row, maxRow) {
   if (!td.activationPosition) return true;
   for (const pos of td.activationPosition) {
