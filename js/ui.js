@@ -97,10 +97,12 @@ function renderCollection() {
   const el  = document.getElementById('collection-list');
   el.innerHTML = '';
   const ids = Object.keys(collection).map(Number).filter(id => collection[id] > 0);
-  if (!ids.length) {
+  if (!ids.length && !mergedTablets.length) {
     el.innerHTML = '<div class="empty-collection">No tablets added yet.<br>Click any tablet above.</div>';
     return;
   }
+
+  // ── Base tablets ──────────────────────────────────────────────────
   for (const id of ids) {
     const t      = TABLET_MAP[id];
     const cnt    = collection[id];
@@ -164,6 +166,68 @@ function renderCollection() {
     item.addEventListener('click',      () => selectTabletFromCollection(id));
     item.addEventListener('mouseenter', e  => showTooltip(e, t));
     item.addEventListener('mouseleave', hideTooltip);
+    el.appendChild(item);
+  }
+
+  // ── Merged tablets ────────────────────────────────────────────────
+  for (const mt of mergedTablets) {
+    const placed = countPlacedOfType(mt.id);
+    const item   = document.createElement('div');
+    item.className = 'collection-item' + (selectedTabletId === mt.id ? ' selected' : '');
+
+    // Dual sprite
+    const sprWrap = document.createElement('div');
+    sprWrap.style.cssText = 'display:flex;align-items:center;gap:3px;flex-shrink:0;';
+    [mt.spriteA, mt.spriteB].forEach(sid => {
+      const s = makeSpriteEl(sid, 'clamp(22px,1.9vw,36px)');
+      s.style.border          = '1px solid var(--border)';
+      s.style.borderRadius    = '2px';
+      s.style.background      = 'var(--bg3)';
+      sprWrap.appendChild(s);
+    });
+    item.appendChild(sprWrap);
+
+    const info = document.createElement('div');
+    info.className = 'info';
+    const nm = document.createElement('div');
+    nm.className = 'name';
+    nm.textContent = mt.name;
+    info.appendChild(nm);
+    const tags = document.createElement('div');
+    tags.className = 'tags';
+    tags.innerHTML = `<span class="tag" style="color:var(--teal);border-color:var(--teal)">merged</span> <span style="color:var(--text-dim)">${placed}/1 placed</span>`;
+    info.appendChild(tags);
+    item.appendChild(info);
+
+    const rem = document.createElement('button');
+    rem.className = 'remove-btn';
+    rem.textContent = '×';
+    rem.title = 'Remove merged tablet';
+    rem.addEventListener('click', e => {
+      e.stopPropagation();
+      for (const [key, p] of Object.entries(gridPlacements))
+        if (p.tabletId === mt.id) delete gridPlacements[key];
+      delete TABLET_MAP[mt.id];
+      mergedTablets.splice(mergedTablets.indexOf(mt), 1);
+      if (selectedTabletId === mt.id) { selectedTabletId = null; updateActiveBar(); }
+      renderCollection();
+      renderGrid();
+    });
+    item.appendChild(rem);
+
+    item.addEventListener('click', () => {
+      if (selectedTabletId === mt.id) {
+        selectedTabletId = null;
+        selectedCellKey  = null;
+      } else {
+        selectedTabletId = mt.id;
+        selectedCellKey  = null;
+        selectedRotation = 0;
+      }
+      renderCollection();
+      renderGrid();
+      updateActiveBar();
+    });
     el.appendChild(item);
   }
 }
@@ -247,18 +311,30 @@ function renderGrid() {
         const wrap = document.createElement('div');
         wrap.className = 'cell-tablet' + (selectedCellKey === key ? ' selected-tablet' : '');
 
-        const img = document.createElement('img');
-        img.src = `sprites/${placement.tabletId}.png`;
-        img.alt = '';
-        img.style.cssText = 'width:100%;height:100%;object-fit:cover;image-rendering:pixelated;pointer-events:none;';
-        img.onerror = function () {
-          this.style.display = 'none';
-          const fb = document.createElement('span');
-          fb.className = 'fallback-grid';
-          fb.textContent = td.name.substring(0, 8);
-          wrap.insertBefore(fb, wrap.firstChild);
-        };
-        wrap.appendChild(img);
+        if (td.spriteA !== undefined) {
+          // Merged tablet — two sprites side by side
+          wrap.style.flexDirection = 'row';
+          [td.spriteA, td.spriteB].forEach(sid => {
+            const img = document.createElement('img');
+            img.src = `sprites/${sid}.png`;
+            img.style.cssText = 'width:50%;height:100%;object-fit:cover;image-rendering:pixelated;pointer-events:none;';
+            img.onerror = function () { this.style.display = 'none'; };
+            wrap.appendChild(img);
+          });
+        } else {
+          const img = document.createElement('img');
+          img.src = `sprites/${placement.tabletId}.png`;
+          img.alt = '';
+          img.style.cssText = 'width:100%;height:100%;object-fit:cover;image-rendering:pixelated;pointer-events:none;';
+          img.onerror = function () {
+            this.style.display = 'none';
+            const fb = document.createElement('span');
+            fb.className = 'fallback-grid';
+            fb.textContent = td.name.substring(0, 8);
+            wrap.insertBefore(fb, wrap.firstChild);
+          };
+          wrap.appendChild(img);
+        }
 
         const badge = document.createElement('span');
         badge.className = 'rot-badge' + (placement.rotation === 0 ? ' hidden' : '');
@@ -325,7 +401,10 @@ function buildCellMap(maxRow) {
 
 function clickEmptyCell(key, row, col) {
   if (!selectedTabletId) return;
-  if (countPlacedOfType(selectedTabletId) >= (collection[selectedTabletId] || 0)) {
+  const maxCopies = typeof selectedTabletId === 'string'
+    ? 1
+    : (collection[selectedTabletId] || 0);
+  if (countPlacedOfType(selectedTabletId) >= maxCopies) {
     setLog('No more copies available', 'err');
     return;
   }
@@ -383,7 +462,22 @@ function updateActiveBar() {
 
   const sprWrap = document.createElement('div');
   sprWrap.className = 'atb-sprite';
-  sprWrap.appendChild(makeSpriteEl(selectedTabletId, '100%'));
+  if (td.spriteA !== undefined) {
+    // Merged tablet — dual sprite
+    sprWrap.style.width      = 'auto';
+    sprWrap.style.border     = 'none';
+    sprWrap.style.background = 'transparent';
+    sprWrap.style.gap        = '3px';
+    [td.spriteA, td.spriteB].forEach(sid => {
+      const s = makeSpriteEl(sid, 'clamp(22px,1.9vw,36px)');
+      s.style.border       = '1px solid var(--gold-dim)';
+      s.style.borderRadius = '2px';
+      s.style.background   = 'var(--bg2)';
+      sprWrap.appendChild(s);
+    });
+  } else {
+    sprWrap.appendChild(makeSpriteEl(selectedTabletId, '100%'));
+  }
   bar.appendChild(sprWrap);
 
   const info = document.createElement('div');
@@ -545,6 +639,7 @@ document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
   if (e.key === 'r' || e.key === 'R') rotateSelected();
   if (e.key === 'Escape') {
+    if (document.getElementById('merge-overlay')) { closeMergeDialog(); return; }
     selectedTabletId = null;
     selectedCellKey  = null;
     renderGrid();

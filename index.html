@@ -17,7 +17,7 @@
 
 <header>
   <h1>Tablet Optimizer</h1>
-  <div class="subtitle">inventory grid solver &nbsp;·&nbsp; v1.1</div>
+  <div class="subtitle">inventory grid solver &nbsp;·&nbsp; v1.2</div>
 </header>
 
 <div class="app">
@@ -47,6 +47,7 @@
       <div class="collection-section">
         <div class="collection-section-header">
           <span class="section-label">Your collection</span>
+          <button class="merge-open-btn" onclick="openMergeDialog()">⊕ Merge</button>
         </div>
         <div class="collection-scroll">
           <div class="collection-list" id="collection-list">
@@ -80,12 +81,10 @@
     </div>
     <div class="changelog-row">
       <div class="changelog-panel">
-        <div class="changelog-title">Changelog v1.1</div>
+        <div class="changelog-title">Changelog v1.2</div>
         <div class="changelog-content">
           <ul>
-            <li>Restructued code for better organization.</li>
-            <li>Slightly optimized solver performance by skipping redundant rotations for certain tablets.</li>
-            <li>Added alphabetical sorting option for tablet picker.</li>
+            <li>Tablet merging is live</li>
           </ul>
         </div>
       </div>
@@ -94,7 +93,6 @@
         <div class="changelog-content">
           <ul>
             <li>x2 slot buffs from Mystic combo.</li>
-            <li>Tablet merging for Chapter 5 and onwards.</li>
             <li>More solver solutions with table display and filtering options.</li>
             <li>Solver option for items which require specific placement.</li>
           </ul>
@@ -135,6 +133,7 @@
 <script src="js/engine.js"></script>
 <script src="js/solver.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/merge.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

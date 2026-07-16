@@ -2,8 +2,9 @@
 // Depends on: state.js, engine.js
 
 async function runSolver() {
-  const ids = Object.keys(collection).map(Number).filter(id => collection[id] > 0);
-  if (!ids.length) { setLog('Add tablets to collection first', 'err'); return; }
+  const ids       = Object.keys(collection).map(Number).filter(id => collection[id] > 0);
+  const mergedIds = mergedTablets.map(mt => mt.id);
+  if (!ids.length && !mergedIds.length) { setLog('Add tablets to collection first', 'err'); return; }
 
   const btn = document.getElementById('solve-btn');
   btn.disabled = true;
@@ -20,6 +21,7 @@ async function runSolver() {
   const pool = [];
   for (const id of ids)
     for (let n = 0; n < collection[id]; n++) pool.push(id);
+  for (const id of mergedIds) pool.push(id);
 
   const allCells = [];
   for (let r = 1; r <= maxRow; r++)
