@@ -145,7 +145,7 @@ function createMergedTablet(tdA, rotA, tdB, rotB) {
     name: `${tdA.name} + ${tdB.name}`,
     spriteA: tdA.id,
     spriteB: tdB.id,
-    disableRotate: true,
+    disableRotate: !!(tdA.disableRotate || tdB.disableRotate),
     ...(effects.length  ? { effects }  : {}),
     ...(lineBuff.length ? { lineBuff } : {}),
   };

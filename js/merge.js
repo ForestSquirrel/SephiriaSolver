@@ -240,6 +240,50 @@ function renderMergeSelArea(slot) {
   el.appendChild(rotRow);
 }
 
+// ── Preview Contribution Helper ───────────────────────────────────
+// Self-contained alternative to getTabletContributions that uses the
+// preview grid size instead of global COLS / bottomRowForCol, so
+// row/diagonal effects span the full preview and bottom ref maps to
+// the preview's actual bottom row rather than the game grid's.
+
+function previewContributions(td, cx, cy, rot, size) {
+  const r = ((rot % 4) + 4) % 4;
+  const out = [];
+
+  if (td.effects) {
+    for (const [ex, ey, buff] of td.effects) {
+      const [rx, ry] = rotateXY(ex, ey, r);
+      out.push({ col: cx + rx, row: cy - ry, buff });
+    }
+  }
+
+  if (td.lineBuff) {
+    for (const lb of td.lineBuff) {
+      let axis = lb.axis;
+      const ref  = lb.ref;
+      const buff = lb.buff;
+      // Pre-apply 90°/270° axis swap for self-ref (mirrors engine logic)
+      if (ref === 'self' && r % 2 === 1)
+        axis = axis === 'row' ? 'column' : axis === 'column' ? 'row' : axis;
+
+      if (axis === 'row') {
+        const tr = ref === 'bottom' ? size : ref === 'self' ? cy : 1;
+        for (let c = 1; c <= size; c++) out.push({ col: c, row: tr, buff });
+      } else if (axis === 'column') {
+        const tc = ref === 'right' ? size : ref === 'self' ? cx : 1;
+        for (let row = 1; row <= size; row++) out.push({ col: tc, row, buff });
+      } else if (axis === 'diagonal') {
+        const diag0 = (r === 0 || r === 2);
+        for (let row = 1; row <= size; row++)
+          for (let col = 1; col <= size; col++)
+            if (diag0 ? col + row === cx + cy : col - row === cx - cy)
+              out.push({ col, row, buff });
+      }
+    }
+  }
+  return out;
+}
+
 // ── AOE Preview Grid ──────────────────────────────────────────────
 
 function renderMergePreview() {
@@ -254,8 +298,7 @@ function renderMergePreview() {
   const mapA = {}, mapB = {};
 
   if (mergeSelA) {
-    const td = { ...TABLET_MAP[mergeSelA], activationPosition: undefined };
-    for (const { col, row, buff } of getTabletContributions(td, CX, CY, mergeRotA, SIZE)) {
+    for (const { col, row, buff } of previewContributions(TABLET_MAP[mergeSelA], CX, CY, mergeRotA, SIZE)) {
       if (col >= 1 && col <= SIZE && row >= 1 && row <= SIZE) {
         const k = `${row},${col}`;
         mapA[k] = (mapA[k] || 0) + buff;
@@ -263,8 +306,7 @@ function renderMergePreview() {
     }
   }
   if (mergeSelB) {
-    const td = { ...TABLET_MAP[mergeSelB], activationPosition: undefined };
-    for (const { col, row, buff } of getTabletContributions(td, CX, CY, mergeRotB, SIZE)) {
+    for (const { col, row, buff } of previewContributions(TABLET_MAP[mergeSelB], CX, CY, mergeRotB, SIZE)) {
       if (col >= 1 && col <= SIZE && row >= 1 && row <= SIZE) {
         const k = `${row},${col}`;
         mapB[k] = (mapB[k] || 0) + buff;
