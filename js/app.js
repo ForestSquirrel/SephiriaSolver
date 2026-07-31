@@ -28,6 +28,7 @@ function init() {
   renderCollection();
   renderGrid();
   updateActiveBar();
+  updateMarkUI();
 }
 
 bootstrap();

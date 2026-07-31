@@ -23,6 +23,18 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Native number spinners don't fit the theme — strip them everywhere */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 html, body {
   width: 100%; height: 100%;
 }
@@ -141,6 +153,12 @@ header .subtitle {
   color: var(--text-dim);
   text-transform: uppercase;
 }
+.picker-section-header .section-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
 .toggle-btn {
   font-size: clamp(9px, 0.65vw, 12px);
   color: var(--gold-dim);
@@ -153,6 +171,12 @@ header .subtitle {
   transition: all 0.15s;
 }
 .toggle-btn:hover { border-color: var(--gold); color: var(--gold); }
+.header-btns {
+  display: flex;
+  align-items: center;
+  gap: clamp(4px,0.4vw,7px);
+  flex-shrink: 0;
+}
 
 .tablet-picker-wrap {
   overflow-y: auto;
@@ -205,30 +229,6 @@ header .subtitle {
   color: var(--gold-dim);
   pointer-events: none;
   text-shadow: 0 0 3px #000;
-}
-
-.picker-controls {
-  padding: clamp(4px,0.35vw,8px) clamp(8px,0.8vw,12px);
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.sort-btn {
-  border: 1px solid var(--border);
-  background: var(--bg1);
-  color: var(--text);
-  padding: 6px 12px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-}
-
-.sort-btn:hover {
-  border-color: var(--gold);
-  color: var(--gold);
 }
 
 .changelog-row {
@@ -731,6 +731,62 @@ header .subtitle {
 }
 .grid-instructions b { color: var(--gold-dim); }
 
+/* Marking toolbar above the grid */
+.grid-tools {
+  display: flex;
+  align-items: center;
+  gap: clamp(4px,0.4vw,8px);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.tool-btn {
+  padding: clamp(4px,0.4vh,7px) clamp(7px,0.6vw,12px);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: clamp(9px,0.65vw,12px);
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  border-radius: 3px;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+.tool-btn:hover { border-color: var(--gold-dim); color: var(--text); }
+.tool-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(200,168,75,0.1); }
+.tool-btn #x2-count { color: var(--text-dim); }
+
+.tool-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(3px,0.3vw,6px);
+}
+.tool-inline select,
+.tool-inline input {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: clamp(10px,0.7vw,13px);
+  padding: clamp(3px,0.3vh,6px) clamp(4px,0.35vw,7px);
+  border-radius: 3px;
+}
+.tool-inline input { width: clamp(46px,3.6vw,66px); text-align: center; }
+.tool-inline select:focus,
+.tool-inline input:focus { outline: none; border-color: var(--gold-dim); }
+/* custom caret so the select matches the rest of the chrome */
+.tool-inline select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: clamp(14px,1.1vw,20px);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'><path d='M0 0h10L5 6z' fill='%237a6530'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right clamp(4px,0.35vw,7px) center;
+  background-size: clamp(6px,0.5vw,9px);
+  cursor: pointer;
+}
+.tool-inline select:hover { border-color: var(--gold-dim); }
+
 .grid-container { position: relative; }
 
 .inv-grid {
@@ -830,6 +886,24 @@ header .subtitle {
 .grid-cell.aoe-pos { background: rgba(92,190,122,0.15) !important; border-color: rgba(92,190,122,0.45) !important; }
 .grid-cell.aoe-neg { background: rgba(224,92,92,0.15) !important; border-color: rgba(224,92,92,0.45) !important; }
 
+/* Cell marks — outline/inset shadow so they survive the aoe !important background+border */
+.grid-cell.mark-x2     { outline: 2px dashed var(--gold); outline-offset: -2px; }
+.grid-cell.mark-target { box-shadow: inset 0 0 0 2px var(--teal); }
+
+.mark-badge {
+  position: absolute;
+  left: 2px;
+  font-family: var(--font-mono);
+  font-size: clamp(7px,0.55vw,10px);
+  background: rgba(0,0,0,0.75);
+  padding: 0 2px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 2;
+}
+.mark-badge.x2  { top: 2px;    color: var(--gold-bright); }
+.mark-badge.tgt { bottom: 2px; color: var(--teal); }
+
 /* ── Right Panel ─────────────────────────────────────────── */
 .mode-btns {
   display: grid;
@@ -926,6 +1000,13 @@ header .subtitle {
 }
 .result-title { font-size: clamp(9px,0.65vw,12px); color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; }
 .result-score { font-size: clamp(14px,1.1vw,20px); color: var(--gold); font-weight: bold; }
+
+.result-meta {
+  font-size: clamp(8px,0.6vw,11px);
+  color: var(--text-dim);
+  margin-bottom: clamp(4px,0.4vh,7px);
+  letter-spacing: 0.5px;
+}
 
 .result-dist {
   font-size: clamp(8px,0.6vw,11px);

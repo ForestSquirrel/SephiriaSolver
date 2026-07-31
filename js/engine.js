@@ -102,7 +102,35 @@ function computeBuffMap(placements, maxRow) {
       map[k] = (map[k] || 0) + buff;
     }
   }
+
+  // ×2 slots double the cell's NET value (negatives included)
+  for (const k of Object.keys(x2Slots)) {
+    const [r, c] = k.split(',').map(Number);
+    if (r > maxRow || !isActiveCell(r, c)) continue;
+    if (map[k]) map[k] *= 2;
+  }
+
   return map;
+}
+
+// Every active cell not occupied by a tablet — the set every score/stat is computed over.
+function activeEmptyCells(placements, maxRow) {
+  const out = [];
+  for (let r = 1; r <= maxRow; r++)
+    for (let c = 1; c <= COLS; c++) {
+      const key = `${r},${c}`;
+      if (isActiveCell(r, c) && !placements[key]) out.push({ row: r, col: c, key });
+    }
+  return out;
+}
+
+// Drop marks on cells that are no longer part of the grid (e.g. after clearGrid resets expansion).
+function pruneMarks() {
+  for (const map of [x2Slots, slotTargets])
+    for (const k of Object.keys(map)) {
+      const [r, c] = k.split(',').map(Number);
+      if (!isActiveCell(r, c)) delete map[k];
+    }
 }
 
 // ── Activation Check ─────────────────────────────────────────────

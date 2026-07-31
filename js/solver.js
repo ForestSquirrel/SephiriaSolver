@@ -17,6 +17,7 @@ async function runSolver() {
 
   const maxRow    = totalRows();
   const targetVal = parseInt(document.getElementById('target-val').value) || 3;
+  const highVal   = parseInt(document.getElementById('highval-val').value) || 5;
 
   const pool = [];
   for (const id of ids)
@@ -26,7 +27,9 @@ async function runSolver() {
   const allCells = [];
   for (let r = 1; r <= maxRow; r++)
     for (let c = 1; c <= COLS; c++)
-      if (isActiveCell(r, c)) allCells.push({ row: r, col: c });
+      // Cells the user pinned to a value must stay empty to receive that value
+      if (isActiveCell(r, c) && !slotTargets[`${r},${c}`]) allCells.push({ row: r, col: c });
+  const cellKeys = allCells.map(({ row, col }) => `${row},${col}`);
 
   const seen    = new Set();
   const results = [];
@@ -47,21 +50,21 @@ async function runSolver() {
         if (!checkActivation(td, col, row, maxRow)) continue;
         for (const rot of rotations) {
           const tempP = { ...placements, [key]: { tabletId, rotation: rot } };
-          const sc = scoreP(tempP, maxRow, solveMode, targetVal);
+          const sc = scoreP(tempP, maxRow, solveMode, targetVal, highVal);
           if (sc > bestScore) { bestScore = sc; bestKey = key; bestRot = rot; }
         }
       }
       if (bestKey) placements[bestKey] = { tabletId, rotation: bestRot };
     }
 
-    localSearch(placements, maxRow, solveMode, targetVal, 300);
+    localSearch(placements, maxRow, solveMode, targetVal, highVal, cellKeys, 300);
 
     const sig = signature(placements);
     if (!seen.has(sig)) {
       seen.add(sig);
       results.push({
         placements: JSON.parse(JSON.stringify(placements)),
-        score:      scoreP(placements, maxRow, solveMode, targetVal),
+        score:      scoreP(placements, maxRow, solveMode, targetVal, highVal),
         buffMap:    computeBuffMap(placements, maxRow),
       });
     }
@@ -76,17 +79,17 @@ async function runSolver() {
   renderResults();
 }
 
-function localSearch(placements, maxRow, mode, tv, iters) {
+function localSearch(placements, maxRow, mode, tv, hv, cellKeys, iters) {
   const keys = Object.keys(placements);
   for (let i = 0; i < iters; i++) {
-    const base = scoreP(placements, maxRow, mode, tv);
+    const base = scoreP(placements, maxRow, mode, tv, hv);
     if (keys.length > 0) {
       const k  = keys[Math.floor(Math.random() * keys.length)];
       const td = TABLET_MAP[placements[k].tabletId];
       if (!td.disableRotate) {
         const orig = placements[k].rotation;
         placements[k].rotation = (orig + 1 + Math.floor(Math.random() * 3)) % 4;
-        if (scoreP(placements, maxRow, mode, tv) < base) placements[k].rotation = orig;
+        if (scoreP(placements, maxRow, mode, tv, hv) < base) placements[k].rotation = orig;
       }
     }
     if (keys.length >= 2) {
@@ -101,31 +104,71 @@ function localSearch(placements, maxRow, mode, tv, iters) {
       const tmp = placements[k1];
       placements[k1] = placements[k2];
       placements[k2] = tmp;
-      if (scoreP(placements, maxRow, mode, tv) < base) {
+      if (scoreP(placements, maxRow, mode, tv, hv) < base) {
         const tmp2 = placements[k1];
         placements[k1] = placements[k2];
         placements[k2] = tmp2;
       }
     }
+
+    // Relocate: move one tablet to a free cell. Swaps alone can never pull a tablet
+    // into a region the greedy pass ignored (e.g. next to a pinned slot).
+    if (keys.length > 0 && cellKeys && cellKeys.length) {
+      const moveBase = scoreP(placements, maxRow, mode, tv, hv);
+      const ki   = Math.floor(Math.random() * keys.length);
+      const from = keys[ki];
+      const to   = cellKeys[Math.floor(Math.random() * cellKeys.length)];
+      if (!placements[to]) {
+        const [tr, tc] = to.split(',').map(Number);
+        if (checkActivation(TABLET_MAP[placements[from].tabletId], tc, tr, maxRow)) {
+          placements[to] = placements[from];
+          delete placements[from];
+          if (scoreP(placements, maxRow, mode, tv, hv) < moveBase) {
+            placements[from] = placements[to];
+            delete placements[to];
+          } else {
+            keys[ki] = to;
+          }
+        }
+      }
+    }
   }
 }
 
-function scoreP(placements, maxRow, mode, tv) {
-  const bm   = computeBuffMap(placements, maxRow);
-  const vals = [];
-  for (let r = 1; r <= maxRow; r++)
-    for (let c = 1; c <= COLS; c++)
-      if (isActiveCell(r, c) && !placements[`${r},${c}`])
-        vals.push(bm[`${r},${c}`] || 0);
+// Lexicographic scoring weights. Each tier must outweigh the worst case of the tier
+// below it, so a better primary result is never traded away for a better tie-break.
+const CELL_W     = 1e4;   // one qualifying slot   (vs. total buff, worst case ~800)
+const PIN_MISS_W = 1e5;   // one point closer to an unmet pin (vs. a few qualifying slots)
+const PIN_W      = 1e7;   // one satisfied pin     (vs. every other term combined)
 
-  if (mode === 'total') return vals.reduce((a, b) => a + b, 0);
-  if (mode === 'min')   return vals.reduce((a, b) => a + b, 0) * 0.3 + (vals.length ? Math.min(...vals) : 0) * 10;
-  if (mode === 'target') {
-    let s = 0;
-    for (const v of vals) s += v >= tv ? 3 : v - tv;
-    return s;
+function scoreP(placements, maxRow, mode, tv, hv) {
+  const bm    = computeBuffMap(placements, maxRow);
+  const vals  = activeEmptyCells(placements, maxRow).map(({ key }) => bm[key] || 0);
+  const total = vals.reduce((a, b) => a + b, 0);
+
+  let s = 0;
+  // Total buff stays the tie-break inside coverage/maximize.
+  if (mode === 'coverage')      s = vals.filter(v => v >  0).length  * CELL_W + total;
+  else if (mode === 'maximize') s = vals.filter(v => v >= hv).length * CELL_W + total;
+  else if (mode === 'target')   s = vals.reduce((a, v) => a + (v >= tv ? 3 : v - tv), 0);
+
+  return s + pinScore(bm, placements);
+}
+
+// Per-slot desired values. A miss is graded by distance so the hill-climber has a gradient.
+function pinScore(bm, placements) {
+  let s = 0;
+  for (const [k, t] of Object.entries(slotTargets)) {
+    const [r, c] = k.split(',').map(Number);
+    if (!isActiveCell(r, c) || placements[k]) continue;
+    const v = bm[k] || 0;
+    s += pinMet(v, t) ? PIN_W : -Math.abs(v - t.value) * PIN_MISS_W;
   }
-  return 0;
+  return s;
+}
+
+function pinMet(v, t) {
+  return t.op === 'eq' ? v === t.value : v >= t.value;
 }
 
 function shuffle(arr) {

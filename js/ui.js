@@ -305,6 +305,16 @@ function renderGrid() {
       }
       if (selectedCellKey === key) cell.classList.add('highlight');
 
+      if (x2Slots[key]) {
+        cell.classList.add('mark-x2');
+        cell.appendChild(makeMarkBadge('x2', '×2'));
+      }
+      if (slotTargets[key]) {
+        const t = slotTargets[key];
+        cell.classList.add('mark-target');
+        cell.appendChild(makeMarkBadge('tgt', (t.op === 'eq' ? '=' : '≥') + t.value));
+      }
+
       const placement = gridPlacements[key];
       if (placement) {
         const td   = TABLET_MAP[placement.tabletId];
@@ -348,16 +358,21 @@ function renderGrid() {
         } else {
           cell.title = `${td.name} [${placement.rotation * 90}°] — click to pick up`;
         }
-        cell.addEventListener('click', () => clickPlacedTablet(key));
+        if (markMode) cell.addEventListener('click', () => toggleMark(key));
+        else          cell.addEventListener('click', () => clickPlacedTablet(key));
       } else {
         const v      = buffMap[key] || 0;
         const buffEl = document.createElement('span');
         buffEl.className  = 'cell-buff ' + (v > 0 ? 'pos' : v < 0 ? 'neg' : 'zero');
         buffEl.textContent = v > 0 ? `+${v}` : v === 0 ? '·' : v;
         cell.appendChild(buffEl);
-        cell.addEventListener('click',      () => clickEmptyCell(key, row, col));
-        cell.addEventListener('mouseenter', () => hoverEmptyCell(key, row, col));
-        cell.addEventListener('mouseleave', clearHoverAoe);
+        if (markMode) {
+          cell.addEventListener('click', () => toggleMark(key));
+        } else {
+          cell.addEventListener('click',      () => clickEmptyCell(key, row, col));
+          cell.addEventListener('mouseenter', () => hoverEmptyCell(key, row, col));
+          cell.addEventListener('mouseleave', clearHoverAoe);
+        }
       }
 
       gridEl.appendChild(cell);
@@ -365,6 +380,65 @@ function renderGrid() {
   }
 
   updateStats(buffMap, maxRow);
+}
+
+// ── Cell Marks (×2 slots / per-slot target values) ───────────────
+
+function makeMarkBadge(kind, text) {
+  const b = document.createElement('span');
+  b.className = 'mark-badge ' + kind;
+  b.textContent = text;
+  return b;
+}
+
+function setMarkMode(mode) {
+  markMode = markMode === mode ? null : mode;
+  if (markMode) {
+    // marking and placing would fight over the same click
+    selectedTabletId = null;
+    selectedCellKey  = null;
+    updateActiveBar();
+  }
+  updateMarkUI();
+  renderGrid();
+}
+
+function updateMarkUI() {
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  if (markMode) document.getElementById(`btn-mark-${markMode}`).classList.add('active');
+  document.getElementById('mark-target-controls').style.display = markMode === 'target' ? 'inline-flex' : 'none';
+  document.getElementById('x2-count').textContent = `${Object.keys(x2Slots).length}/${MAX_X2_SLOTS}`;
+}
+
+function toggleMark(key) {
+  if (markMode === 'x2') {
+    if (x2Slots[key]) {
+      delete x2Slots[key];
+    } else if (Object.keys(x2Slots).length >= MAX_X2_SLOTS) {
+      setLog(`Max ${MAX_X2_SLOTS} ×2 slots`, 'err');
+      return;
+    } else {
+      x2Slots[key] = true;
+    }
+  } else if (markMode === 'target') {
+    const value = parseInt(document.getElementById('mark-target-val').value) || 0;
+    const op    = document.getElementById('mark-target-op').value;
+    const cur   = slotTargets[key];
+    if (cur && cur.value === value && cur.op === op) delete slotTargets[key];
+    else slotTargets[key] = { value, op };
+  } else {
+    return;
+  }
+  setLog('');
+  updateMarkUI();
+  renderGrid();
+}
+
+function clearMarks() {
+  x2Slots     = {};
+  slotTargets = {};
+  updateMarkUI();
+  renderGrid();
 }
 
 // ── Cell Interactions ────────────────────────────────────────────
@@ -435,15 +509,28 @@ function clickPlacedTablet(key) {
 
 function updateStats(buffMap, maxRow) {
   if (!buffMap) { maxRow = totalRows(); buffMap = computeBuffMap(gridPlacements, maxRow); }
-  let total = 0;
-  for (let r = 1; r <= maxRow; r++)
-    for (let c = 1; c <= COLS; c++)
-      if (isActiveCell(r, c) && !gridPlacements[`${r},${c}`])
-        total += buffMap[`${r},${c}`] || 0;
+  const total = activeEmptyCells(gridPlacements, maxRow)
+    .reduce((a, { key }) => a + (buffMap[key] || 0), 0);
 
   document.getElementById('stat-total').textContent  = (total >= 0 ? '+' : '') + total;
   document.getElementById('stat-placed').textContent = Object.keys(gridPlacements).length;
   document.getElementById('stat-grid').textContent   = `6×${BASE_ROWS} +${expandedSlots}`;
+
+  const { met, tot } = pinStats(buffMap, gridPlacements);
+  document.getElementById('stat-pins-wrap').style.display = tot ? '' : 'none';
+  document.getElementById('stat-pins').textContent = `${met}/${tot}`;
+}
+
+// How many pinned slots currently hold their desired value.
+function pinStats(buffMap, placements) {
+  let met = 0, tot = 0;
+  for (const [k, t] of Object.entries(slotTargets)) {
+    const [r, c] = k.split(',').map(Number);
+    if (!isActiveCell(r, c)) continue;
+    tot++;
+    if (!placements[k] && pinMet(buffMap[k] || 0, t)) met++;
+  }
+  return { met, tot };
 }
 
 // ── Active Tablet Bar ────────────────────────────────────────────
@@ -517,6 +604,8 @@ function clearGrid() {
   expandedSlots    = 0;
   solverResults    = [];
   appliedResultIdx = -1;
+  pruneMarks();          // expansion reset may have dropped marked cells off the grid
+  updateMarkUI();
   renderGrid();
   renderCollection();
   updateActiveBar();
@@ -530,7 +619,8 @@ function setMode(mode) {
   solveMode = mode;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(`btn-mode-${mode}`).classList.add('active');
-  document.getElementById('target-row').style.display = mode === 'target' ? 'flex' : 'none';
+  document.getElementById('target-row').style.display  = mode === 'target'   ? 'flex' : 'none';
+  document.getElementById('highval-row').style.display = mode === 'maximize' ? 'flex' : 'none';
 }
 
 function setLog(msg, type = '') {
@@ -553,15 +643,15 @@ function renderResults() {
     const card = document.createElement('div');
     card.className = 'result-card' + (appliedResultIdx === idx ? ' applied' : '');
 
-    let total = 0;
+    let total = 0, covered = 0;
     const dist = {};
-    for (let r = 1; r <= maxRow; r++)
-      for (let c = 1; c <= COLS; c++)
-        if (isActiveCell(r, c) && !res.placements[`${r},${c}`]) {
-          const v = res.buffMap[`${r},${c}`] || 0;
-          total += v;
-          dist[v] = (dist[v] || 0) + 1;
-        }
+    for (const { key } of activeEmptyCells(res.placements, maxRow)) {
+      const v = res.buffMap[key] || 0;
+      total += v;
+      if (v > 0) covered++;
+      dist[v] = (dist[v] || 0) + 1;
+    }
+    const pins = pinStats(res.buffMap, res.placements);
 
     const hdr = document.createElement('div');
     hdr.className = 'result-header';
@@ -569,6 +659,13 @@ function renderResults() {
       `<span class="result-title">Option ${idx + 1}</span>` +
       `<span class="result-score">${total >= 0 ? '+' : ''}${total}</span>`;
     card.appendChild(hdr);
+
+    const meta = document.createElement('div');
+    meta.className = 'result-meta';
+    const slots = activeEmptyCells(res.placements, maxRow).length;
+    meta.textContent = `covered ${covered}/${slots} slots` +
+      (pins.tot ? ` · targets met ${pins.met}/${pins.tot}` : '');
+    card.appendChild(meta);
 
     const distEl = document.createElement('div');
     distEl.className = 'result-dist';
@@ -640,6 +737,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'r' || e.key === 'R') rotateSelected();
   if (e.key === 'Escape') {
     if (document.getElementById('merge-overlay')) { closeMergeDialog(); return; }
+    if (markMode) { setMarkMode(markMode); return; }  // toggles the active tool off
     selectedTabletId = null;
     selectedCellKey  = null;
     renderGrid();

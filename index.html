@@ -32,11 +32,11 @@
       <!-- Picker section (collapsible / expandable) -->
       <div class="picker-section" id="picker-section">
         <div class="picker-section-header" onclick="togglePicker()">
-          <span class="section-label">All tablets — click to add</span>
-          <button class="toggle-btn" id="picker-toggle-btn">Expand ▲</button>
-        </div>
-        <div class="picker-controls">
-          <button class="sort-btn" id="picker-sort-btn" onclick="toggleTabletSort()" type="button">Sort: ID</button>
+          <span class="section-label">All tablets</span>
+          <span class="header-btns">
+            <button class="toggle-btn" id="picker-sort-btn" onclick="event.stopPropagation(); toggleTabletSort()" type="button">Sort: ID</button>
+            <button class="toggle-btn" id="picker-toggle-btn">Expand ▲</button>
+          </span>
         </div>
         <div class="tablet-picker-wrap">
           <div class="tablet-picker-grid" id="tablet-picker"></div>
@@ -69,7 +69,20 @@
       <b>Click</b> empty cell to place selected tablet &nbsp;·&nbsp;
       <b>Click</b> placed tablet to pick up / select &nbsp;·&nbsp;
       <b>R</b> to rotate &nbsp;·&nbsp; <b>Esc</b> to deselect<br>
-      Hover empty cell to preview AOE &nbsp;·&nbsp; <b>+</b> cells expand the grid
+      Hover empty cell to preview AOE &nbsp;·&nbsp; <b>+</b> cells expand the grid<br>
+      Enable a marking tool below, then <b>click</b> cells to mark them &nbsp;·&nbsp; click the tool again to place tablets
+    </div>
+    <div class="grid-tools">
+      <button class="tool-btn" id="btn-mark-x2" onclick="setMarkMode('x2')" type="button">×2 Slot <span id="x2-count">0/3</span></button>
+      <button class="tool-btn" id="btn-mark-target" onclick="setMarkMode('target')" type="button">Target Slot</button>
+      <span class="tool-inline" id="mark-target-controls" style="display:none">
+        <select id="mark-target-op">
+          <option value="gte">≥</option>
+          <option value="eq">=</option>
+        </select>
+        <input type="number" id="mark-target-val" value="3" min="-20" max="20">
+      </span>
+      <button class="tool-btn" onclick="clearMarks()" type="button">Clear marks</button>
     </div>
     <div class="grid-container">
       <div class="inv-grid" id="inv-grid"></div>
@@ -78,6 +91,7 @@
       <div class="stat"><b>TOTAL BUFF</b> <span id="stat-total">0</span></div>
       <div class="stat"><b>TABLETS PLACED</b> <span id="stat-placed">0</span></div>
       <div class="stat"><b>GRID SIZE</b> <span id="stat-grid">6×5 +0</span></div>
+      <div class="stat" id="stat-pins-wrap" style="display:none"><b>TARGETS MET</b> <span id="stat-pins">0/0</span></div>
     </div>
     <div class="changelog-row">
       <div class="changelog-panel">
@@ -86,6 +100,9 @@
           <ul>
             <li>New tablets fropm Sephiria 1.0 Release</li>
             <li>Competetion, Wave, Preparation, Daydream tablets changed according to 1.0 patch notes</li>
+            <li>×2 slot buffs from Mystic combo — mark up to 3 cells above the grid</li>
+            <li>Per-slot desired values — pin a cell to ≥ or = a value, solver prioritizes it</li>
+            <li>Solver modes reworked: Perfect Coverage / Maximize / Target Value</li>
           </ul>
         </div>
       </div>
@@ -94,7 +111,6 @@
         <div class="changelog-content">
           <ul>
             <li>Missing 2 tablets from Sephiria 1.0 Release((( Gotta play and find em to add)</li>
-            <li>x2 slot buffs from Mystic combo.</li>
             <li>More solver solutions with table display and filtering options.</li>
             <li>Solver option for items which require specific placement.</li>
           </ul>
@@ -109,9 +125,13 @@
     <div class="panel-body">
       <div class="section-label" style="margin-bottom:clamp(6px,0.6vh,10px)">Optimization mode</div>
       <div class="mode-btns">
-        <button class="mode-btn active" id="btn-mode-total"   onclick="setMode('total')">Maximize<br>Total</button>
-        <button class="mode-btn"        id="btn-mode-min"     onclick="setMode('min')">Maximize<br>Minimum</button>
-        <button class="mode-btn full"   id="btn-mode-target"  onclick="setMode('target')">Target Value per Slot</button>
+        <button class="mode-btn active" id="btn-mode-coverage" onclick="setMode('coverage')">Perfect<br>Coverage</button>
+        <button class="mode-btn"        id="btn-mode-maximize" onclick="setMode('maximize')">Maximize</button>
+        <button class="mode-btn full"   id="btn-mode-target"   onclick="setMode('target')">Target Value</button>
+      </div>
+      <div class="target-row" id="highval-row" style="display:none">
+        <label>HIGH VALUE ≥</label>
+        <input type="number" id="highval-val" value="5" min="-20" max="20">
       </div>
       <div class="target-row" id="target-row" style="display:none">
         <label>TARGET:</label>
