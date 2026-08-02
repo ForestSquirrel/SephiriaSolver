@@ -619,6 +619,18 @@
         [1, 0, -1],
         [1, -1, 1]
       ]
+    },
+    {
+      "id": 60,
+      "name": "Requital",
+      "effectiveRotations": [0, 1],
+      "lineBuff": [
+        {
+          "axis": "row",
+          "ref": "self",
+          "buff": 3
+        }
+      ]
     }
   ]
 }
