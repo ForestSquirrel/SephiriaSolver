@@ -631,6 +631,15 @@
           "buff": 3
         }
       ]
+    },
+    {
+      "id": 61,
+      "name": "Curse",
+      "effectiveRotations": [0],
+      "parityBuff": {
+        "odd": 1,
+        "even": -1
+      }
     }
   ]
 }

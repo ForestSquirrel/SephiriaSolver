@@ -950,6 +950,11 @@ body {
 }
 .clear-btn:hover { border-color: var(--red); color: var(--red); }
 
+/* Grid-preset toggle — clear-btn geometry, but a gold active state instead of a
+   destructive red hover. Must follow .clear-btn:hover to win on source order. */
+.preset-btn:hover  { border-color: var(--gold-dim); color: var(--text); }
+.preset-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(200,168,75,0.1); }
+
 .results-section { display: flex; flex-direction: column; gap: clamp(5px,0.5vh,9px); }
 
 .result-card {

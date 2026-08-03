@@ -261,6 +261,15 @@ function previewContributions(td, cx, cy, rot, size) {
     }
   }
 
+  if (td.parityBuff) {
+    for (let row = 1; row <= size; row++)
+      for (let col = 1; col <= size; col++) {
+        const odd  = ((col - cx) + (row - cy)) & 1;
+        const buff = odd ? td.parityBuff.odd : td.parityBuff.even;
+        if (buff) out.push({ col, row, buff });
+      }
+  }
+
   if (td.lineBuff) {
     for (const lb of td.lineBuff) {
       let axis = lb.axis;
@@ -359,11 +368,7 @@ function updateMergeConfirmBtn() {
 
   if (warn) {
     warn.textContent = conflict
-      ? `⚠ ${tdA.name} (${tdA.activationPosition.join('/')}) + ${tdB.name} ` +
-        `(${tdB.activationPosition.join('/')}): conflicting activation edges. ` +
-        'In-game behavior is unconfirmed therefore the tool does not support this for now. ' +
-        'Please report in the comments in the Steam guide if you happen to come across ' +
-        'such a thing in the game.'
+      ? '⚠ Illegal merge. If it is a bug, please report to the author in steam guide comments.'
       : '';
   }
   if (btn) btn.disabled = !both || conflict;

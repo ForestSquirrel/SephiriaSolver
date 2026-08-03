@@ -1,7 +1,13 @@
 // Pure game logic — no DOM access.
-// Depends on: state.js (BASE_ROWS, COLS, MAX_EXPAND, expandedSlots, TABLET_MAP)
+// Depends on: state.js (BASE_ROWS, COLS, MAX_ROWS, MAX_EXPAND, expandedSlots, TABLET_MAP)
 
 // ── Grid Geometry ────────────────────────────────────────────────
+
+// Switch the base grid height, re-deriving the expansion budget so the row ceiling stays put.
+function setBaseRows(n) {
+  BASE_ROWS  = n;
+  MAX_EXPAND = (MAX_ROWS - n) * COLS;
+}
 
 function totalRows() {
   if (expandedSlots === 0) return BASE_ROWS;
@@ -53,6 +59,18 @@ function getTabletContributions(td, col, row, rotation, maxRow) {
       const [rx, ry] = rotateXY(ex, ey, rot);
       out.push({ col: col + rx, row: row - ry, buff });
     }
+  }
+
+  // Chessboard over the whole grid — cells at odd Manhattan parity from the
+  // tablet get one value, even parity the other. Position matters only through
+  // the parity of the tablet's own cell; rotation is irrelevant.
+  if (td.parityBuff) {
+    for (let r = 1; r <= maxRow; r++)
+      for (let c = 1; c <= COLS; c++) {
+        const odd  = ((c - col) + (r - row)) & 1;
+        const buff = odd ? td.parityBuff.odd : td.parityBuff.even;
+        if (buff) out.push({ col: c, row: r, buff });
+      }
   }
 
   if (td.lineBuff) {
@@ -188,6 +206,12 @@ function createMergedTablet(tdA, rotA, tdB, rotB) {
   bakeLineBuff(tdA, rotA);
   bakeLineBuff(tdB, rotB);
 
+  // parityBuff is rotation-invariant — just sum the two sources componentwise
+  const parityBuff = {
+    odd:  (tdA.parityBuff?.odd  ?? 0) + (tdB.parityBuff?.odd  ?? 0),
+    even: (tdA.parityBuff?.even ?? 0) + (tdB.parityBuff?.even ?? 0),
+  };
+
   const id = `merged_${mergedTablets.length + 1}_${Date.now()}`;
   return {
     id,
@@ -197,6 +221,7 @@ function createMergedTablet(tdA, rotA, tdB, rotB) {
     disableRotate: !!(tdA.disableRotate || tdB.disableRotate),
     ...(effects.length  ? { effects }  : {}),
     ...(lineBuff.length ? { lineBuff } : {}),
+    ...(parityBuff.odd || parityBuff.even ? { parityBuff } : {}),
     ...(activation.value ? { activationPosition: activation.value } : {}),
   };
 }

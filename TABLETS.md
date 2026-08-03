@@ -12,8 +12,9 @@
 | `activationPosition` | string[] *(optional)* | Restricts which edge(s) of the inventory the tablet must be placed at to activate. Values: `"top"`, `"bottom"`, `"left"`, `"right"` |
 | `lineBuff` | object[] *(optional)* | Buffs applied to an entire row, column, or diagonal |
 | `effects` | tuple[] *(optional)* | Buffs applied to discrete cells relative to the tablet |
+| `parityBuff` | object *(optional)* | Chessboard buff covering the entire grid |
 
-A tablet will have either `lineBuff`, `effects`, or both.
+A tablet will have either `lineBuff`, `effects`, `parityBuff`, or a combination.
 
 ### `lineBuff` entry
 
@@ -27,11 +28,30 @@ A tablet will have either `lineBuff`, `effects`, or both.
 
 Each effect is a compact tuple **`[x, y, buff]`** where `x` and `y` are cell offsets from the tablet's position (positive x = right, positive y = up), and `buff` is the integer modifier. Positive values are buffs, negative are debuffs.
 
+### `parityBuff`
+
+| Field | Type | Description |
+|---|---|---|
+| `odd` | integer | Modifier applied to cells at **odd** parity from the tablet |
+| `even` | integer | Modifier applied to cells at **even** parity from the tablet |
+
+Covers **every active cell of the grid**, not just a neighbourhood. A cell at offset
+`(dx, dy)` from the tablet is *odd* when `dx + dy` is odd and *even* otherwise — the result
+is a chessboard pattern spanning the whole inventory.
+
+The tablet's own location doesn't restrict the area (it always reaches everywhere), but the
+**parity of the cell it sits on** decides which colour of the board is buffed, so moving it
+one cell in any direction flips the entire pattern. Rotation has no effect.
+
+Two tablets with a `parityBuff` on same-parity cells stack; on opposite-parity cells they
+cancel.
+
 ## Merging
 
 Two tablets can be merged in the tool's merge dialog. The result combines both sources'
 `effects` (baked at the chosen rotations) and `lineBuff`s, and is non-rotatable if either
-source was.
+source was. A `parityBuff` is carried over as-is (it is rotation-invariant); if both sources
+have one, the `odd` and `even` values are summed.
 
 `activationPosition` is inherited as follows, treating a missing field as "no restriction":
 

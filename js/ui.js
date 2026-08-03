@@ -613,6 +613,16 @@ function clearGrid() {
   setLog('');
 }
 
+// Early-game inventory is 6×4; it grows to 6×5 with progression. Either way the grid
+// tops out at MAX_ROWS, so the starter grid just gets 6 extra expansion slots.
+function toggleStarterGrid() {
+  starterGrid = !starterGrid;
+  setBaseRows(starterGrid ? 4 : 5);
+  document.getElementById('btn-starter-grid').classList.toggle('active', starterGrid);
+  clearGrid();     // resets placements/expansion/results and prunes off-grid marks
+  updateStats();
+}
+
 // ── Solver Mode Controls ─────────────────────────────────────────
 
 function setMode(mode) {
@@ -715,6 +725,10 @@ function showTooltip(e, t) {
     html += `<span style="color:${b > 0 ? 'var(--green)' : 'var(--red)'}">${b > 0 ? '+' : ''}${b}</span> at (${x > 0 ? '+' : ''}${x}, ${y > 0 ? '+' : ''}${y})<br>`;
   if (t.lineBuff)  for (const lb of t.lineBuff)
     html += `<span style="color:${lb.buff > 0 ? 'var(--green)' : 'var(--red)'}">${lb.buff > 0 ? '+' : ''}${lb.buff}</span> ${lb.axis} [${lb.ref}]<br>`;
+  if (t.parityBuff) {
+    const sp = b => `<span style="color:${b > 0 ? 'var(--green)' : 'var(--red)'}">${b > 0 ? '+' : ''}${b}</span>`;
+    html += `${sp(t.parityBuff.odd)} / ${sp(t.parityBuff.even)} checkerboard — whole grid<br>`;
+  }
   tip.innerHTML = html;
   tip.classList.add('visible');
   posTooltip(e);
