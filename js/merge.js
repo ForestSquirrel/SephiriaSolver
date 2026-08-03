@@ -47,6 +47,10 @@ function openMergeDialog() {
   // Footer
   const footer = document.createElement('div');
   footer.className = 'merge-footer';
+  const warn = document.createElement('div');
+  warn.id = 'merge-warning';
+  warn.className = 'merge-warning';
+  footer.appendChild(warn);
   const confirmBtn = document.createElement('button');
   confirmBtn.id = 'merge-confirm-btn';
   confirmBtn.className = 'merge-confirm-btn';
@@ -345,8 +349,24 @@ function renderMergePreview() {
 // ── Confirm Button & Merge Action ─────────────────────────────────
 
 function updateMergeConfirmBtn() {
-  const btn = document.getElementById('merge-confirm-btn');
-  if (btn) btn.disabled = !(mergeSelA && mergeSelB);
+  const btn  = document.getElementById('merge-confirm-btn');
+  const warn = document.getElementById('merge-warning');
+  const both = !!(mergeSelA && mergeSelB);
+
+  const tdA = both ? TABLET_MAP[mergeSelA] : null;
+  const tdB = both ? TABLET_MAP[mergeSelB] : null;
+  const conflict = both && !mergeActivationPositions(tdA, tdB).ok;
+
+  if (warn) {
+    warn.textContent = conflict
+      ? `⚠ ${tdA.name} (${tdA.activationPosition.join('/')}) + ${tdB.name} ` +
+        `(${tdB.activationPosition.join('/')}): conflicting activation edges. ` +
+        'In-game behavior is unconfirmed therefore the tool does not support this for now. ' +
+        'Please report in the comments in the Steam guide if you happen to come across ' +
+        'such a thing in the game.'
+      : '';
+  }
+  if (btn) btn.disabled = !both || conflict;
 }
 
 function doMerge() {
@@ -355,6 +375,7 @@ function doMerge() {
     TABLET_MAP[mergeSelA], mergeRotA,
     TABLET_MAP[mergeSelB], mergeRotB
   );
+  if (!merged) { updateMergeConfirmBtn(); return; }
   mergedTablets.push(merged);
   TABLET_MAP[merged.id] = merged;
   renderCollection();

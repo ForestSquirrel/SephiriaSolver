@@ -137,7 +137,28 @@ function pruneMarks() {
 
 // ── Merge Engine ─────────────────────────────────────────────────
 
+// Combines two activationPosition sets. A missing field means "no restriction",
+// so the other side's set is inherited as-is. When both restrict and one set is
+// included in the other, the narrower one wins; otherwise the sets conflict and
+// the merge is refused — in-game behavior there is unconfirmed.
+// Returns { ok: true, value: string[]|null } or { ok: false }.
+function mergeActivationPositions(tdA, tdB) {
+  const a = tdA.activationPosition || [];
+  const b = tdB.activationPosition || [];
+  if (!a.length) return { ok: true, value: b.length ? [...b] : null };
+  if (!b.length) return { ok: true, value: [...a] };
+
+  const setA = new Set(a);
+  const setB = new Set(b);
+  if (a.every(p => setB.has(p))) return { ok: true, value: [...a] };
+  if (b.every(p => setA.has(p))) return { ok: true, value: [...b] };
+  return { ok: false };
+}
+
 function createMergedTablet(tdA, rotA, tdB, rotB) {
+  const activation = mergeActivationPositions(tdA, tdB);
+  if (!activation.ok) return null;
+
   // Bake each source's effects at its chosen rotation into a shared map
   const combined = {};
   function bakeEffects(td, rot) {
@@ -176,6 +197,7 @@ function createMergedTablet(tdA, rotA, tdB, rotB) {
     disableRotate: !!(tdA.disableRotate || tdB.disableRotate),
     ...(effects.length  ? { effects }  : {}),
     ...(lineBuff.length ? { lineBuff } : {}),
+    ...(activation.value ? { activationPosition: activation.value } : {}),
   };
 }
 

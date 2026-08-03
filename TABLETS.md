@@ -27,6 +27,23 @@ A tablet will have either `lineBuff`, `effects`, or both.
 
 Each effect is a compact tuple **`[x, y, buff]`** where `x` and `y` are cell offsets from the tablet's position (positive x = right, positive y = up), and `buff` is the integer modifier. Positive values are buffs, negative are debuffs.
 
+## Merging
+
+Two tablets can be merged in the tool's merge dialog. The result combines both sources'
+`effects` (baked at the chosen rotations) and `lineBuff`s, and is non-rotatable if either
+source was.
+
+`activationPosition` is inherited as follows, treating a missing field as "no restriction":
+
+- Neither source has one → the merged tablet has none.
+- Only one source has one → it is inherited as-is.
+- Both are identical → inherited as-is.
+- One set is included in the other (e.g. `["left","right"]` + `["left"]`) → the **narrower**
+  set is inherited (`["left"]`).
+- Any other combination — disjoint (`["top"]` + `["left"]`) or partially overlapping — is
+  **not supported**: the in-game behavior is unconfirmed, so the merge dialog blocks it with
+  an explanatory message.
+
 ## Example
 
 ```json

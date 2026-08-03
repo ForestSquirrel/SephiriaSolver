@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spin to Win — Tablet Optimizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../theme.css">
+<link rel="stylesheet" href="guides.css">
+</head>
+<body class="g-page">
+
+<header class="topbar">
+  <div class="topbar-titles">
+    <h1>Tablet Optimizer</h1>
+    <div class="subtitle">build guides &nbsp;·&nbsp; v2.1</div>
+  </div>
+  <a class="topbar-link" href="index.html">◆ All Guides</a>
+</header>
+
+<div class="g-main narrow">
+
+  <div class="g-titlerow">
+    <div class="g-titlerow-art">
+      <img src="Assets/Sprites/Staff_3.2.png" alt="Ilonica's Spirit Staff">
+    </div>
+    <div>
+      <div class="g-eyebrow"><a href="index.html">Guides</a> / Spin to Win</div>
+      <h2 class="g-h2">Spin to Win</h2>
+    </div>
+  </div>
+  <p class="g-deck">An all-around ranged build with strong single-target and multi-target damage, built around balancing the three elemental damage stats and letting Ilonica's Spirit Staff auto-cast bolts for you.</p>
+
+  <nav class="g-toc">
+    <div class="g-toc-title">Table of Contents</div>
+    <div class="g-toc-links">
+      <a href="#core-principle">Core Principle</a>
+      <span class="g-toc-sep">|</span>
+      <a href="#build-details">Build Details</a>
+      <span class="g-toc-sep">|</span>
+      <a href="#combos">Combos</a>
+      <span class="g-toc-sep">|</span>
+      <a href="#pitfalls">How Not to Ruin Your Damage</a>
+      <span class="g-toc-sep">|</span>
+      <a href="#shrines">Shrines</a>
+      <span class="g-toc-sep">|</span>
+      <a href="#costumes">Costumes</a>
+      <span class="g-toc-sep">|</span>
+      <a href="#fruit-skewer">Fruit Skewer</a>
+    </div>
+  </nav>
+
+  <div class="g-panel-row">
+    <div class="g-panel g-panel--pro">
+      <div class="g-panel-title">Pros</div>
+      <ul class="g-list">
+        <li>Good all-arounder — decent single-target damage plus multi-target hits</li>
+        <li>Completely ranged</li>
+        <li>Special attack has perfect block — a great panic button</li>
+        <li>Great defenses — both <b class="s-def">defense</b> and <b class="s-eva">evasion</b> scale your damage with no extra investment</li>
+        <li>Damage scales just from getting any combo, so even suboptimal or non-working items still help</li>
+      </ul>
+    </div>
+    <div class="g-panel g-panel--con">
+      <div class="g-panel-title">Cons</div>
+      <ul class="g-list">
+        <li>Easy to mess up elemental damage stats</li>
+        <li>Getting bolts is RNG</li>
+        <li>Four core items are 3/4/5/5 buffs — not maxing them hurts the build drastically</li>
+        <li>Can't manually cast other Grimoires — only the three auto-cast bolts</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="g-section-label" id="core-principle">Core Principle</div>
+
+  <div class="g-block">
+    <h3 class="g-h3">Elemental Damage</h3>
+    <p class="g-p">There are three elemental damage stats in the game: Lightning <img class="icn" src="Assets/ComboIcons/Magitech.png" alt="Magitech">, Fire <img class="icn" src="Assets/ComboIcons/Ember.png" alt="Ember">, and Ice <img class="icn" src="Assets/ComboIcons/Glacier.png" alt="Glacier"> — coming mainly from their respective combos. Your <b class="s-elem">Highest Elemental Damage</b> is simply your highest value across the three. The Elemental <img class="icn" src="Assets/ComboIcons/Elemental.png" alt="Elemental"> combo scales your <b class="s-elem">Highest Elemental Damage</b>, adding to whichever stat is currently on top.</p>
+    <p class="g-p">Now, what if all three are equal? Here's the trick: if all three are equal, <b class="s-elem">Highest Elemental Damage</b> affects <b class="s-gold">all three</b> — three times the value, for balance. This balance — fragile as it is — is our core principle.</p>
+  </div>
+
+  <div class="g-block">
+    <h3 class="g-h3">The Spinner</h3>
+    <p class="g-p">Our weapon of choice is the Staff, upgraded at the first anvil into the Flower Staff. The Flower Staff changes our basic attack into an infinite spinner — drastically reducing damage but giving continuous output (the special attack is unchanged). From there, another anvil takes us to Ilonica's Spirit Staff — our Spinner.</p>
+
+    <div class="g-figrow g-figrow--boxed">
+      <div class="g-fig">
+        <img class="sz-m" src="Assets/Sprites/Staff_1.png" alt="Staff">
+        <span class="g-fig-label">Staff</span>
+      </div>
+      <span class="g-arrow">→</span>
+      <div class="g-fig">
+        <img class="sz-m" src="Assets/Sprites/Staff_2.1.png" alt="Flower Staff">
+        <span class="g-fig-label">Flower Staff</span>
+      </div>
+      <span class="g-arrow">→</span>
+      <div class="g-fig">
+        <img class="sz-m" src="Assets/Sprites/Staff_3.2.png" alt="Ilonica's Spirit Staff">
+        <span class="g-fig-label is-hl">Ilonica's Spirit Staff</span>
+      </div>
+    </div>
+
+    <p class="g-p">Ilonica's Spirit Staff changes our normal attack to Grimoire: Bolt Barrage. This prevents us from manually casting any grimoires except the three bolts below — they're cast automatically, at random, with no mana cost, at our <b class="s-spd">Attack Speed</b>, for as long as we hold the attack button:</p>
+
+    <div class="g-figrow">
+      <img class="g-shot wide" src="Assets/FullItems/Ilonica's%20Spirit%20Staff.png" alt="Ilonica's Spirit Staff tooltip">
+    </div>
+
+    <div class="g-figrow">
+      <div class="g-fig g-fig--boxed">
+        <img class="sz-s" src="Assets/Sprites/Lightning%20Bolt.png" alt="Lightning Bolt">
+        <span class="g-fig-label">Lightning Bolt</span>
+      </div>
+      <div class="g-fig g-fig--boxed">
+        <img class="sz-s" src="Assets/Sprites/Ice%20Bolt.png" alt="Ice Bolt">
+        <span class="g-fig-label">Ice Bolt</span>
+      </div>
+      <div class="g-fig g-fig--boxed">
+        <img class="sz-s" src="Assets/Sprites/Fire%20Bolt.png" alt="Fire Bolt">
+        <span class="g-fig-label">Fire Bolt</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="g-block">
+    <h3 class="g-h3">Grimoire Haste</h3>
+    <p class="g-p">This is one of our most important stats. <b class="s-haste">Grimoire Haste</b> affects the recovery of our grimoires — and our bolts recover on their own. We cast them at our <b class="s-spd">Attack Speed</b>, sure, but if they're on cooldown, we're out of luck. Academy <img class="icn" src="Assets/ComboIcons/Academy.png" alt="Academy"> has us covered here, through both its combo effects and its items.</p>
+    <div class="g-note">
+      <b>Note —</b> heavily investing in <b class="s-haste">Grimoire Haste</b> alone is a mistake: <b class="s-spd">Attack Speed</b> will soon fall behind the cooldowns of the three bolts, since they recover independently of one another.
+    </div>
+  </div>
+
+  <div class="g-section-label" id="build-details">Build Details</div>
+
+  <div class="g-block">
+    <h3 class="g-h3">Core Items</h3>
+    <p class="g-p">We already have our Ilonica's Spirit Staff and the three bolt grimoires: <img class="icn" src="Assets/Sprites/Lightning%20Bolt.png" alt="Lightning Bolt"> <img class="icn" src="Assets/Sprites/Ice%20Bolt.png" alt="Ice Bolt"> <img class="icn" src="Assets/Sprites/Fire%20Bolt.png" alt="Fire Bolt">. What else?</p>
+
+    <p class="g-p">The two must-picks are Bicorne Pipe and Mouse Mage's Pendant. The first lets us shoot 3 bolts instead of 1 (getting it to +5 is a priority since it lowers damage reduction); the second is simple homing — a great QoL that also greatly increases our single-target damage from any range.</p>
+
+    <div class="g-figrow">
+      <img class="g-shot" src="Assets/FullItems/Bicorne%20Pipe.png" alt="Bicorne Pipe">
+      <img class="g-shot" src="Assets/FullItems/Mouse%20Mage's%20Pendant.png" alt="Mouse Mage's Pendant">
+    </div>
+
+    <p class="g-p">Onto the scaling — as mentioned in Pros, we can scale our <b class="s-def">defenses</b> and our damage climbs with them. Meet Academy Fountain Pen and Shield Bag. The first gets us a % damage boost to our three books through <b class="s-eva">evasion</b> and also helps with cooldowns; the second is a flat increase to our elemental stats — conveniently all three at once, no downsides. Getting them to MAX is equally important, so we're ramping up damage, not squeezing it out.</p>
+
+    <div class="g-figrow">
+      <img class="g-shot" src="Assets/FullItems/Academy%20Fountain%20Pen.png" alt="Academy Fountain Pen">
+      <img class="g-shot" src="Assets/FullItems/Shield%20Bag.png" alt="Shield Bag">
+    </div>
+
+    <p class="g-p">Academy Brigandine is amazing — it gives so much <b class="s-haste">Grimoire Haste</b> with levels, along with some <b class="s-def">defense</b>, and that's not all: Academy Brigandine and Shield Bag are both Academy <img class="icn" src="Assets/ComboIcons/Academy.png" alt="Academy"> and Guardian <img class="icn" src="Assets/ComboIcons/Guardian.png" alt="Guardian">, so we get Guardian going for free — extra <b class="s-def">defense</b>, extra damage.</p>
+
+    <div class="g-figrow">
+      <img class="g-shot" src="Assets/FullItems/Academy%20Brigandine.png" alt="Academy Brigandine">
+    </div>
+
+    <p class="g-p">Honorable mentions: Multipurpose Belt — +1 to all three elemental stats for each artifact in the top inventory row (up to +6 each). It's also Mystic <img class="icn" src="Assets/ComboIcons/Mystic.png" alt="Mystic">, which is nice and helps with its x2 buff on inventory slots to get artifacts to MAX easier. Second honorable mention is Beast's Heart, a Guardian <img class="icn" src="Assets/ComboIcons/Guardian.png" alt="Guardian"> combo item that gives a lot of <b class="s-def">defense</b> with levels, along with some <b class="s-udb">Universal Damage Boost</b> and <b class="s-luck">Luck</b>.</p>
+
+    <div class="g-figrow g-figrow--top">
+      <img class="g-shot" src="Assets/FullItems/Multipurpose%20Belt.png" alt="Multipurpose Belt">
+      <img class="g-shot" src="Assets/FullItems/Beast's%20Heart.png" alt="Beast's Heart">
+    </div>
+  </div>
+
+  <div class="g-block">
+    <h3 class="g-h3">Talents</h3>
+    <div class="g-pills">
+      <span class="g-pill g-pill--gold">Ingenuity 20</span>
+      <span class="g-pill g-pill--def">Defense 5</span>
+      <span class="g-pill g-pill--luck">Luck 5</span>
+    </div>
+    <p class="g-p"><b class="s-gold">Ingenuity</b> at 20 gives us 20 Max HP and 10 <b class="s-eva">Evasion</b> (remember Academy Fountain Pen), but what we care about here is +7% <b class="s-udb">Universal Damage Boost</b> for each active combo type — and we'll have a lot of combos active with this build.</p>
+    <p class="g-p"><b class="s-luck">Luck</b> at 5 gives a nice +2 rerolls to help find our Elementalist Miracle, alongside +1 Wishing Fountain Capacity — this lets us bring one Yellow item into the run. I suggest Bicorne Pipe.</p>
+    <p class="g-p"><b class="s-def">Defense</b> 5 is an all-around Foundation tablet from the start — 5 extra <b class="s-def">defense</b> (remember Shield Bag) — and it also helps with levels on our items.</p>
+  </div>
+
+  <div class="g-block">
+    <h3 class="g-h3" id="combos">Combos</h3>
+    <p class="g-p"><b class="s-gold">Ingenuity</b> lets us scale our damage with active combos, so let's see how far we can take it.</p>
+    <p class="g-p">Academy <img class="icn" src="Assets/ComboIcons/Academy.png" alt="Academy"> is our main combo — we force it, nothing to discuss here.</p>
+    <p class="g-p">Guardian <img class="icn" src="Assets/ComboIcons/Guardian.png" alt="Guardian"> requires 2 items to activate, and we already have Shield Bag and Academy Brigandine, so it's covered.</p>
+    <p class="g-p">Shadow <img class="icn" src="Assets/ComboIcons/Shadow.png" alt="Shadow"> — 2 items to activate; the first is our Academy Fountain Pen, so pick any other and you're good to go.</p>
+    <p class="g-p">Magitech <img class="icn" src="Assets/ComboIcons/Magitech.png" alt="Magitech">, Ember <img class="icn" src="Assets/ComboIcons/Ember.png" alt="Ember"> and Glacier <img class="icn" src="Assets/ComboIcons/Glacier.png" alt="Glacier"> all need 2 items, and our bolt grimoires cover the first item on all three. Enter the Jellyfishes — they fill in the missing last item from each elemental combo. Why Jellyfish? Because they're also Companion <img class="icn" src="Assets/ComboIcons/Companion.png" alt="Companion">, so we get that combo for free.</p>
+
+    <div class="g-figrow">
+      <div class="g-fig g-fig--boxed">
+        <img class="sz-l" src="Assets/Sprites/EmberJelly_Sprite.png" alt="Ember Jelly">
+        <span class="g-fig-label">Ember Jelly</span>
+      </div>
+      <div class="g-fig g-fig--boxed">
+        <img class="sz-l" src="Assets/Sprites/MagitechJelly_Sprite.png" alt="Magitech Jelly">
+        <span class="g-fig-label">Magitech Jelly</span>
+      </div>
+      <div class="g-fig g-fig--boxed">
+        <img class="sz-l" src="Assets/Sprites/GlacierJelly_Sprite.png" alt="Glacier Jelly">
+        <span class="g-fig-label">Glacier Jelly</span>
+      </div>
+    </div>
+
+    <p class="g-p aside">That's already 7 combos for a 49% <b class="s-udb">Universal Damage Boost</b> from the Ingenuity talent.</p>
+    <p class="g-p">Mystic <img class="icn" src="Assets/ComboIcons/Mystic.png" alt="Mystic"> is easy if you have Multipurpose Belt — pick any extra Mystic item and the combo is live.</p>
+    <p class="g-p"><b class="s-red">Lake</b> <img class="icn" src="Assets/ComboIcons/Lake.png" alt="Lake"> though is a scam — it requires 3 items to activate and there's little to no Lake items that fit our build. Skip.</p>
+    <p class="g-p">Elemental <img class="icn" src="Assets/ComboIcons/Elemental.png" alt="Elemental"> is amazing since it scales <b class="s-elem">Highest Elemental Damage</b> and needs only 2 items — worth going for, but in my experience too hard to come by.</p>
+    <p class="g-p">Any other 2-item combos can be picked up and used sparingly, or you can even try opting into Lake — nothing specific here, it's all about what the game gives you.</p>
+  </div>
+
+  <div class="g-block">
+    <h3 class="g-h3" id="pitfalls">How Not to Ruin Your Damage</h3>
+    <div class="g-note g-note--warn">
+      Remember, we must keep Lightning <img class="icn" src="Assets/ComboIcons/Magitech.png" alt="Magitech">, Fire <img class="icn" src="Assets/ComboIcons/Ember.png" alt="Ember">, and Ice <img class="icn" src="Assets/ComboIcons/Glacier.png" alt="Glacier"> stats in sync at all times. This means on their respective combos (Ember, Glacier and Magitech) we can't go above 3 items, since 4 gives a flat boost to that specific stat. Also beware items that give temporary buffs to a certain element — these will ruin everything too. Potions which give flat elemental stats are completely out of the question: easy to mess up, almost impossible to recover.
+    </div>
+  </div>
+
+  <div class="g-block">
+    <h3 class="g-h3" id="shrines">Shrines</h3>
+    <div class="g-stack">
+      <img class="g-shot shrine" src="Assets/Shrine.png" alt="Shrine">
+      <p class="g-p">Shrines let you pick either Max HP or <b class="s-def">Defense</b> — opting into <b class="s-def">Defense</b> is highly recommended, since Shield Bag and Ingenuity already give us Max HP.</p>
+    </div>
+  </div>
+
+  <div class="g-block">
+    <h3 class="g-h3" id="costumes">Costumes</h3>
+    <p class="g-p">For our "Class" we have two strong options: Braided Hair Rabbit or Brown Rabbit. The first gives <b class="s-spd">Attack Speed</b>, which boosts our spinner and damage; the second is <b class="s-eva">Evasion</b>-focused. I'd recommend Brown Rabbit, since we can scale damage through <b class="s-eva">evasion</b> with Academy Fountain Pen, and it also makes starting runs more comfortable since the build does require some rare items.</p>
+    <div class="g-costume-row">
+      <div class="g-costume">
+        <img src="Assets/Costumes/Braided%20Hair%20Rabbit.png" alt="Braided Hair Rabbit">
+        <span class="g-costume-name">Braided Hair Rabbit</span>
+      </div>
+      <div class="g-costume is-rec">
+        <img src="Assets/Costumes/Brown%20Rabbit.png" alt="Brown Rabbit">
+        <span class="g-costume-name">Brown Rabbit</span>
+        <span class="g-rec-tag">Recommended</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="g-block">
+    <h3 class="g-h3" id="fruit-skewer">Fruit Skewer</h3>
+    <p class="g-p">Opt into Academy <img class="icn" src="Assets/ComboIcons/Academy.png" alt="Academy"> +2, followed by +1 on Magitech <img class="icn" src="Assets/ComboIcons/Magitech.png" alt="Magitech">, Ember <img class="icn" src="Assets/ComboIcons/Ember.png" alt="Ember">, Glacier <img class="icn" src="Assets/ComboIcons/Glacier.png" alt="Glacier"> and Guardian <img class="icn" src="Assets/ComboIcons/Guardian.png" alt="Guardian"> — or tweak it to decrease some non-useful combos like Sturdy <img class="icn" src="Assets/ComboIcons/Sturdy.png" alt="Sturdy">. Your choice.</p>
+  </div>
+
+</div>
+
+<div class="g-footer">Tablet Optimizer — Guides</div>
+
+</body>
+</html>

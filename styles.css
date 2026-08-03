@@ -1,25 +1,4 @@
-:root {
-  --bg0: #0d0f14;
-  --bg1: #13161e;
-  --bg2: #1a1e2a;
-  --bg3: #222736;
-  --border: #2e3448;
-  --border-bright: #404868;
-  --gold: #c8a84b;
-  --gold-dim: #7a6530;
-  --gold-bright: #f0cc70;
-  --teal: #4ecdc4;
-  --red: #e05c5c;
-  --green: #5cbe7a;
-  --text: #c8cdd8;
-  --text-dim: #6b7280;
-  --text-bright: #e8ecf4;
-  /* cell size scales with viewport: comfortable on 1080p, larger on 2K/4K */
-  --cell: clamp(52px, 4.2vw, 88px);
-  --ui-scale: clamp(0.85, 0.6vw + 0.4, 1.4);
-  --font-mono: 'Share Tech Mono', monospace;
-  --font-display: 'Cinzel', serif;
-}
+/* Palette + top bar live in theme.css, which every page links first. */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -48,29 +27,6 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-/* ── Header ─────────────────────────────────────────────── */
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: clamp(6px,0.6vh,12px) clamp(12px,1.2vw,24px);
-  border-bottom: 1px solid var(--border);
-  background: var(--bg1);
-  flex-shrink: 0;
-}
-header h1 {
-  font-family: var(--font-display);
-  font-size: clamp(14px, 1.2vw, 22px);
-  color: var(--gold);
-  letter-spacing: 3px;
-  text-transform: uppercase;
-}
-header .subtitle {
-  color: var(--text-dim);
-  font-size: clamp(10px, 0.7vw, 13px);
-  letter-spacing: 1px;
 }
 
 /* ── Layout ──────────────────────────────────────────────── */
@@ -551,10 +507,21 @@ header .subtitle {
   border-top: 1px solid var(--border);
   padding: clamp(8px,0.75vh,12px) clamp(12px,1vw,18px);
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px,0.6vh,10px);
   justify-content: center;
   background: var(--bg0);
   flex-shrink: 0;
 }
+.merge-warning {
+  font-size: clamp(9px,0.62vw,11px);
+  line-height: 1.5;
+  color: var(--red);
+  text-align: center;
+  max-width: 520px;
+}
+.merge-warning:empty { display: none; }
 .merge-confirm-btn {
   padding: clamp(7px,0.65vh,11px) clamp(24px,2vw,38px);
   background: linear-gradient(135deg, rgba(78,205,196,0.25), rgba(78,205,196,0.1));

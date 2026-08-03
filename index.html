@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tablet Optimizer</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,9 +16,12 @@
   <p id="loading-msg">Loading tablets.json…</p>
 </div>
 
-<header>
-  <h1>Tablet Optimizer</h1>
-  <div class="subtitle">inventory grid solver &nbsp;·&nbsp; v2.0</div>
+<header class="topbar">
+  <div class="topbar-titles">
+    <h1>Tablet Optimizer</h1>
+    <div class="subtitle">inventory grid solver &nbsp;·&nbsp; v2.1</div>
+  </div>
+  <a class="topbar-link" href="Guides/">◆ Guides</a>
 </header>
 
 <div class="app">
@@ -95,14 +99,12 @@
     </div>
     <div class="changelog-row">
       <div class="changelog-panel">
-        <div class="changelog-title">Changelog v2.0</div>
+        <div class="changelog-title">Changelog v2.1</div>
         <div class="changelog-content">
           <ul>
-            <li>New tablets fropm Sephiria 1.0 Release</li>
-            <li>Competetion, Wave, Preparation, Daydream tablets changed according to 1.0 patch notes</li>
-            <li>×2 slot buffs from Mystic combo — mark up to 3 cells above the grid</li>
-            <li>Per-slot desired values — pin a cell to ≥ or = a value, solver prioritizes it</li>
-            <li>Solver modes reworked: Perfect Coverage / Maximize / Target Value</li>
+            <li>Fixed tablet merging — merged tablets now inherit activation position</li>
+            <li>Added Guides — more to come</li>
+            <li>Added "Requital" tablet</li>
           </ul>
         </div>
       </div>
