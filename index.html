@@ -32,6 +32,12 @@
       <span>Tablets</span>
     </div>
     <div class="left-panel-inner">
+      <!-- BROKEN TEST SNIPPET: intentionally invalid, for CI testing -->
+      <div id="solver-panel">
+          <p>Unclosed paragraph tag on purpose
+            <img src="sprites/does-not-exist.png">
+            <div id="solver-panel">Duplicate id, should also error</div>
+      </div></p>
 
       <!-- Picker section (collapsible / expandable) -->
       <div class="picker-section" id="picker-section">
