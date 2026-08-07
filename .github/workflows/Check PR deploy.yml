@@ -1,0 +1,33 @@
+name: Pages Build Check
+
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate HTML
+        run: npx html-validate --formatter stylish "**/*.html"
+
+      - name: Check JS syntax
+        run: |
+          find . -name "*.js" -not -path "./node_modules/*" -print0 \
+            | xargs -0 -n1 node --check
+
+      - name: Lint JS
+        run: npx eslint js/**/*.js --no-eslintrc --config .eslintrc.json
+
+      - name: Check for broken local links
+        run: node .github/scripts/check-links.js
+
+      - name: Validate Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
