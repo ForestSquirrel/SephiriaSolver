@@ -19,7 +19,7 @@
 <header class="topbar">
   <div class="topbar-titles">
     <h1>Tablet Optimizer</h1>
-    <div class="subtitle">inventory grid solver &nbsp;·&nbsp; v2.1</div>
+    <div class="subtitle">inventory grid solver &nbsp;·&nbsp; Rulesets update</div>
   </div>
   <a class="topbar-link" href="Guides/">◆ Guides</a>
 </header>
@@ -99,13 +99,13 @@
     </div>
     <div class="changelog-row">
       <div class="changelog-panel">
-        <div class="changelog-title">Changelog v2.1</div>
+        <div class="changelog-title">Changelog — Rulesets update</div>
         <div class="changelog-content">
           <ul>
-            <li>Fixed tablet merging — merged tablets now inherit activation position</li>
-            <li>Added Guides — more to come</li>
-            <li>Added "Requital" tablet and "Curse" for my Skeleton lovers</li>
-            <li>Added "Starter Grid" button for early-game 6×4 inventory</li>
+            <li>Added Rulesets — ask for a count of slots at a value without pinning which slots</li>
+            <li>Solver keeps every layout it finds — browse, sort and filter them in the results table</li>
+            <li>Search time is now a budget you pick, with progress and cancel</li>
+            <li>Tweaked max grid to 60 slots</li>
           </ul>
         </div>
       </div>
@@ -113,9 +113,9 @@
         <div class="changelog-title">TODO</div>
         <div class="changelog-content">
           <ul>
-            <li>Missing 1 tablet from Sephiria 1.0 Release((( Gotta play and find it to add)</li>
-            <li>More solver solutions with table display and filtering options.</li>
-            <li>Solver option for items which require specific placement.</li>
+            <li>I still have a feeling 1 Tablet is missing</li>
+            <li>Rulesets for items which require specific placement</li>
+            <li>More Guides &lt;3</li>
           </ul>
         </div>
       </div>
@@ -127,11 +127,16 @@
     <div class="panel-header"><span>Solver</span></div>
     <div class="panel-body">
       <div class="section-label" style="margin-bottom:clamp(6px,0.6vh,10px)">Optimization mode</div>
-      <div class="mode-btns">
+      <div class="engine-btns">
+        <button class="engine-btn active" id="btn-engine-legacy"  onclick="setEngine('legacy')"  type="button">Legacy</button>
+        <button class="engine-btn"        id="btn-engine-ruleset" onclick="setEngine('ruleset')" type="button" title="Ask for a count of slots at a value, without pinning which slots">Rulesets</button>
+      </div>
+      <div class="mode-btns" id="mode-btns">
         <button class="mode-btn active" id="btn-mode-coverage" onclick="setMode('coverage')">Perfect<br>Coverage</button>
         <button class="mode-btn"        id="btn-mode-maximize" onclick="setMode('maximize')">Maximize</button>
         <button class="mode-btn full"   id="btn-mode-target"   onclick="setMode('target')">Target Value</button>
       </div>
+      <button class="rules-open-btn" id="rules-open-btn" onclick="openRulesDialog()" type="button" style="display:none">Manage Rules</button>
       <div class="target-row" id="highval-row" style="display:none">
         <label>HIGH VALUE ≥</label>
         <input type="number" id="highval-val" value="5" min="-20" max="20">
@@ -140,7 +145,22 @@
         <label>TARGET:</label>
         <input type="number" id="target-val" value="3" min="-20" max="20">
       </div>
+      <div class="section-label" style="margin-bottom:clamp(6px,0.6vh,10px)">Search time</div>
+      <div class="budget-btns">
+        <button class="budget-btn active" id="btn-budget-1000"  onclick="setBudget(1000)"  type="button">Quick<br>1s</button>
+        <button class="budget-btn"        id="btn-budget-5000"  onclick="setBudget(5000)"  type="button">Standard<br>5s</button>
+        <button class="budget-btn"        id="btn-budget-15000" onclick="setBudget(15000)" type="button">Deep<br>15s</button>
+        <button class="budget-btn"        id="btn-budget-30000" onclick="setBudget(30000)" type="button">Max<br>30s</button>
+      </div>
+      <div class="budget-hint">Longer searches find better layouts, not just more of them. Large grids may overshoot slightly — the budget is checked between attempts.</div>
       <button class="solve-btn" id="solve-btn" onclick="runSolver()">◆ Solve ◆</button>
+      <div class="solve-progress" id="solve-progress" style="display:none">
+        <div class="solve-progress-track"><div class="solve-progress-fill" id="solve-progress-fill"></div></div>
+        <div class="solve-progress-row">
+          <span id="solve-progress-text">…</span>
+          <button class="solve-cancel-btn" onclick="cancelSolve()" type="button">■ Cancel</button>
+        </div>
+      </div>
       <button class="clear-btn" onclick="clearGrid()">Clear Grid</button>
       <button class="clear-btn preset-btn" id="btn-starter-grid" onclick="toggleStarterGrid()" type="button" title="Early-game 6×4 inventory">Starter Grid</button>
       <div class="solver-log" id="solver-log"></div>
@@ -160,6 +180,8 @@
 <script src="js/solver.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/merge.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/results.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

@@ -533,6 +533,23 @@ function pinStats(buffMap, placements) {
   return { met, tot };
 }
 
+// Everything the result cards and the results table need to describe one layout.
+// Computed once per result at solve time so the table can render hundreds of rows
+// (and re-render on every filter keystroke) without touching the buff map again.
+function resultStats(placements, buffMap, maxRow) {
+  let total = 0, covered = 0, slots = 0;
+  const dist = {};   // buff value -> how many slots got it
+  for (const { key } of activeEmptyCells(placements, maxRow)) {
+    const v = buffMap[key] || 0;
+    slots++;
+    total += v;
+    if (v > 0) covered++;
+    dist[v] = (dist[v] || 0) + 1;
+  }
+  const pins = pinStats(buffMap, placements);
+  return { total, covered, slots, dist, pinsMet: pins.met, pinsTot: pins.tot };
+}
+
 // ── Active Tablet Bar ────────────────────────────────────────────
 
 function updateActiveBar() {
@@ -629,8 +646,67 @@ function setMode(mode) {
   solveMode = mode;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(`btn-mode-${mode}`).classList.add('active');
-  document.getElementById('target-row').style.display  = mode === 'target'   ? 'flex' : 'none';
-  document.getElementById('highval-row').style.display = mode === 'maximize' ? 'flex' : 'none';
+  updateEngineUI();
+}
+
+// Legacy keeps the three global modes; Rulesets swaps them for the rules dialog.
+function setEngine(engine) {
+  solverEngine = engine;
+  document.querySelectorAll('.engine-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`btn-engine-${engine}`).classList.add('active');
+  updateEngineUI();
+}
+
+function updateEngineUI() {
+  const legacy = solverEngine === 'legacy';
+  document.getElementById('mode-btns').style.display      = legacy ? 'grid' : 'none';
+  document.getElementById('rules-open-btn').style.display = legacy ? 'none' : 'block';
+  // Both value inputs are legacy-only — ruleset mode never asks for a bare number,
+  // it derives Rest/Maximize's ceiling from the rules (or maximizes raw buff).
+  document.getElementById('target-row').style.display  = legacy && solveMode === 'target'   ? 'flex' : 'none';
+  document.getElementById('highval-row').style.display = legacy && solveMode === 'maximize' ? 'flex' : 'none';
+  updateRulesBtn();
+}
+
+function updateRulesBtn() {
+  const btn = document.getElementById('rules-open-btn');
+  if (!btn) return;
+  btn.textContent = rules.length ? `Manage Rules (${rules.length})` : 'Manage Rules';
+}
+
+// ── Search budget & progress ─────────────────────────────────────
+
+function setBudget(ms) {
+  searchBudgetMs = ms;
+  document.querySelectorAll('.budget-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`btn-budget-${ms}`).classList.add('active');
+}
+
+function showSolveProgress(on) {
+  const el = document.getElementById('solve-progress');
+  if (!el) return;
+  el.style.display = on ? 'block' : 'none';
+  if (on) {
+    document.getElementById('solve-progress-fill').style.width = '0%';
+    document.getElementById('solve-progress-text').textContent = 'starting…';
+  }
+}
+
+function updateSolveProgress(startedAt, deadline, found) {
+  const fill = document.getElementById('solve-progress-fill');
+  const text = document.getElementById('solve-progress-text');
+  if (!fill || !text) return;
+  const elapsed = Date.now() - startedAt;
+  const budget  = deadline - startedAt;
+  fill.style.width = `${Math.min(100, (elapsed / budget) * 100)}%`;
+  text.textContent =
+    `${(elapsed / 1000).toFixed(1)}s / ${(budget / 1000).toFixed(0)}s · ${found} result${found === 1 ? '' : 's'}`;
+}
+
+function cancelSolve() {
+  solverCancelled = true;
+  const text = document.getElementById('solve-progress-text');
+  if (text) text.textContent = 'finishing current attempt…';
 }
 
 function setLog(msg, type = '') {
@@ -649,19 +725,40 @@ function renderResults() {
     return;
   }
   const maxRow = totalRows();
-  solverResults.forEach((res, idx) => {
+
+  // The search can't prove a ruleset impossible — only fail to find a layout — so
+  // say that, rather than presenting a short result as a clean win.
+  const best = solverResults[0];
+  if (best && best.ruleBreakdown && !best.rulesSatisfied) {
+    const missed = best.ruleBreakdown.filter(b => !b.satisfied);
+    const banner = document.createElement('div');
+    banner.className = 'rules-banner';
+    let html = '<b>Rules partially satisfied</b><br>Couldn\'t find a placement that meets:<br>';
+    for (const m of missed)
+      html += `· Rule ${m.idx} needs ${COUNT_OP_LABEL[m.countOp].toLowerCase()} ` +
+              `${m.required} slots at ${VALUE_OP_LABEL[m.valueOp]}${m.value}, best attempt found ${m.matched}<br>`;
+    const floor = guaranteedEmptySlots();
+    if (missed.some(m => m.required > floor * 0.75))
+      html += '<span class="rules-banner-hint">This ruleset is very tight for your current slot count.</span>';
+    banner.innerHTML = html;
+    el.appendChild(banner);
+  }
+
+  // Applying from the table can select a result with no card, so say so — otherwise
+  // the applied state is invisible.
+  if (appliedResultIdx >= 3) {
+    const note = document.createElement('div');
+    note.className = 'applied-note';
+    note.textContent = `Applied: result #${appliedResultIdx + 1} from the table`;
+    el.appendChild(note);
+  }
+
+  solverResults.slice(0, 3).forEach((res, idx) => {
     const card = document.createElement('div');
     card.className = 'result-card' + (appliedResultIdx === idx ? ' applied' : '');
 
-    let total = 0, covered = 0;
-    const dist = {};
-    for (const { key } of activeEmptyCells(res.placements, maxRow)) {
-      const v = res.buffMap[key] || 0;
-      total += v;
-      if (v > 0) covered++;
-      dist[v] = (dist[v] || 0) + 1;
-    }
-    const pins = pinStats(res.buffMap, res.placements);
+    const { total, covered, slots, dist, pinsMet, pinsTot } =
+      res.stats || resultStats(res.placements, res.buffMap, maxRow);
 
     const hdr = document.createElement('div');
     hdr.className = 'result-header';
@@ -672,9 +769,8 @@ function renderResults() {
 
     const meta = document.createElement('div');
     meta.className = 'result-meta';
-    const slots = activeEmptyCells(res.placements, maxRow).length;
     meta.textContent = `covered ${covered}/${slots} slots` +
-      (pins.tot ? ` · targets met ${pins.met}/${pins.tot}` : '');
+      (pinsTot ? ` · targets met ${pinsMet}/${pinsTot}` : '');
     card.appendChild(meta);
 
     const distEl = document.createElement('div');
@@ -699,6 +795,14 @@ function renderResults() {
 
     el.appendChild(card);
   });
+
+  if (solverResults.length > 3) {
+    const browse = document.createElement('button');
+    browse.className = 'browse-btn';
+    browse.textContent = `Browse all ${solverResults.length} results`;
+    browse.addEventListener('click', openResultsDialog);
+    el.appendChild(browse);
+  }
 }
 
 function applyResult(idx) {
@@ -751,6 +855,8 @@ document.addEventListener('keydown', e => {
   if (e.key === 'r' || e.key === 'R') rotateSelected();
   if (e.key === 'Escape') {
     if (document.getElementById('merge-overlay')) { closeMergeDialog(); return; }
+    if (document.getElementById('rules-overlay'))   { closeRulesDialog();   return; }
+    if (document.getElementById('results-overlay')) { closeResultsDialog(); return; }
     if (markMode) { setMarkMode(markMode); return; }  // toggles the active tool off
     selectedTabletId = null;
     selectedCellKey  = null;

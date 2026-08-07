@@ -19,6 +19,19 @@ async function runSolver() {
   const targetVal = parseInt(document.getElementById('target-val').value) || 3;
   const highVal   = parseInt(document.getElementById('highval-val').value) || 5;
 
+  const usingRules = solverEngine === 'ruleset';
+  if (usingRules) {
+    const bad = validateRules();
+    if (bad) { setLog(bad, 'err'); btn.disabled = false; btn.classList.remove('running'); return; }
+    // Hoisted out of the scorer — it's a pure function of `rules`, and the scorer
+    // runs tens of thousands of times per solve. Null when there's no rule to
+    // derive a bar from, which means "just push the buff as high as it goes".
+    restCeil = derivedRestCeiling();
+  }
+  const scoreOf = usingRules
+    ? p => scoreRules(computeBuffMap(p, maxRow), p, maxRow)
+    : p => scoreP(p, maxRow, solveMode, targetVal, highVal);
+
   const pool = [];
   for (const id of ids)
     for (let n = 0; n < collection[id]; n++) pool.push(id);
@@ -33,9 +46,17 @@ async function runSolver() {
 
   const seen    = new Set();
   const results = [];
-  const NUM_RUNS = 6;
 
-  for (let run = 0; run < NUM_RUNS && results.length < 3; run++) {
+  // The search is bounded by wall clock rather than a run count: every attempt
+  // yields a distinct layout, so time and options are interchangeable, but only
+  // time is bounded no matter how big the grid or collection gets.
+  const MIN_RUNS  = 3;                          // the panel always shows three cards
+  const startedAt = Date.now();
+  const deadline  = startedAt + searchBudgetMs;
+  solverCancelled = false;
+  showSolveProgress(true);
+
+  for (let run = 0; ; run++) {
     const placements = {};
     const remaining  = shuffle([...pool]);
 
@@ -50,46 +71,79 @@ async function runSolver() {
         if (!checkActivation(td, col, row, maxRow)) continue;
         for (const rot of rotations) {
           const tempP = { ...placements, [key]: { tabletId, rotation: rot } };
-          const sc = scoreP(tempP, maxRow, solveMode, targetVal, highVal);
+          const sc = scoreOf(tempP);
           if (sc > bestScore) { bestScore = sc; bestKey = key; bestRot = rot; }
         }
       }
       if (bestKey) placements[bestKey] = { tabletId, rotation: bestRot };
     }
 
-    localSearch(placements, maxRow, solveMode, targetVal, highVal, cellKeys, 300);
+    localSearch(placements, maxRow, scoreOf, cellKeys, 300);
 
     const sig = signature(placements);
     if (!seen.has(sig)) {
       seen.add(sig);
+      const bm = computeBuffMap(placements, maxRow);
+      const breakdown = usingRules ? ruleBreakdown(bm, placements, maxRow) : null;
       results.push({
         placements: JSON.parse(JSON.stringify(placements)),
-        score:      scoreP(placements, maxRow, solveMode, targetVal, highVal),
-        buffMap:    computeBuffMap(placements, maxRow),
+        score:      scoreOf(placements),
+        buffMap:    bm,
+        ruleBreakdown:  breakdown,
+        rulesSatisfied: breakdown ? breakdown.every(b => b.satisfied) : true,
+        // Computed once here rather than per row in the results table, which can
+        // render hundreds of rows and re-render on every filter keystroke.
+        stats: resultStats(placements, bm, maxRow),
       });
     }
-  }
 
-  results.sort((a, b) => b.score - a.score);
-  solverResults = results.slice(0, 3);
+    // Budget is checked *between* runs — a run is atomic, so a solve can overshoot
+    // by up to one run. MIN_RUNS can likewise overshoot a small budget on a big grid.
+    if (solverCancelled) break;
+    if (run + 1 >= MIN_RUNS && Date.now() >= deadline) break;
+    updateSolveProgress(startedAt, deadline, results.length);
+    await yieldToUI();
+  }
+  showSolveProgress(false);
+
+  // A layout that clears the ruleset outranks one that doesn't, whatever the tiers
+  // worked out to — the weights make that almost always true anyway, but "almost"
+  // isn't good enough for what gets shown as Option 1.
+  results.sort((a, b) => (b.rulesSatisfied - a.rulesSatisfied) || (b.score - a.score));
+  // Everything is kept — renderResults shows the top three, the table browses the rest.
+  solverResults = results;
 
   btn.disabled = false;
   btn.classList.remove('running');
-  setLog(`Done — ${solverResults.length} solution(s) found`, 'ok');
+  const n     = solverResults.length;
+  const secs  = ((Date.now() - startedAt) / 1000).toFixed(1);
+  const short = usingRules && n && !solverResults[0].rulesSatisfied;
+  setLog(solverCancelled
+    ? `Cancelled — ${n} solution(s) kept`
+    : short
+    ? `Done in ${secs}s — ${n} solution(s), but no placement met every rule`
+    : `Done in ${secs}s — ${n} solution(s) found`,
+    short ? 'err' : 'ok');
   renderResults();
 }
 
-function localSearch(placements, maxRow, mode, tv, hv, cellKeys, iters) {
+// One macrotask between runs so the browser can repaint the progress bar. Nested
+// timers get clamped to ~4ms, which is under 1% of a 50-400ms run.
+function yieldToUI() {
+  return new Promise(r => setTimeout(r, 0));
+}
+
+function localSearch(placements, maxRow, scoreOf, cellKeys, iters) {
   const keys = Object.keys(placements);
   for (let i = 0; i < iters; i++) {
-    const base = scoreP(placements, maxRow, mode, tv, hv);
+    const base = scoreOf(placements);
     if (keys.length > 0) {
       const k  = keys[Math.floor(Math.random() * keys.length)];
       const td = TABLET_MAP[placements[k].tabletId];
       if (!td.disableRotate) {
         const orig = placements[k].rotation;
         placements[k].rotation = (orig + 1 + Math.floor(Math.random() * 3)) % 4;
-        if (scoreP(placements, maxRow, mode, tv, hv) < base) placements[k].rotation = orig;
+        if (scoreOf(placements) < base) placements[k].rotation = orig;
       }
     }
     if (keys.length >= 2) {
@@ -104,7 +158,7 @@ function localSearch(placements, maxRow, mode, tv, hv, cellKeys, iters) {
       const tmp = placements[k1];
       placements[k1] = placements[k2];
       placements[k2] = tmp;
-      if (scoreP(placements, maxRow, mode, tv, hv) < base) {
+      if (scoreOf(placements) < base) {
         const tmp2 = placements[k1];
         placements[k1] = placements[k2];
         placements[k2] = tmp2;
@@ -114,7 +168,7 @@ function localSearch(placements, maxRow, mode, tv, hv, cellKeys, iters) {
     // Relocate: move one tablet to a free cell. Swaps alone can never pull a tablet
     // into a region the greedy pass ignored (e.g. next to a pinned slot).
     if (keys.length > 0 && cellKeys && cellKeys.length) {
-      const moveBase = scoreP(placements, maxRow, mode, tv, hv);
+      const moveBase = scoreOf(placements);
       const ki   = Math.floor(Math.random() * keys.length);
       const from = keys[ki];
       const to   = cellKeys[Math.floor(Math.random() * cellKeys.length)];
@@ -123,7 +177,7 @@ function localSearch(placements, maxRow, mode, tv, hv, cellKeys, iters) {
         if (checkActivation(TABLET_MAP[placements[from].tabletId], tc, tr, maxRow)) {
           placements[to] = placements[from];
           delete placements[from];
-          if (scoreP(placements, maxRow, mode, tv, hv) < moveBase) {
+          if (scoreOf(placements) < moveBase) {
             placements[from] = placements[to];
             delete placements[to];
           } else {
@@ -169,6 +223,231 @@ function pinScore(bm, placements) {
 
 function pinMet(v, t) {
   return t.op === 'eq' ? v === t.value : v >= t.value;
+}
+
+// ── Ruleset scoring ──────────────────────────────────────────────
+// A rule asks for a *count* of slots at some value without saying which slots, so
+// the solver keeps its placement freedom and stops spending buff on slots nothing
+// asked about. Sits between the pin tier and the leftover tier.
+
+const RULE_W      = 1e6;   // one satisfied rule    (vs. the whole Rest tier, ~4.3e5)
+const RULE_MISS_W = 1e5;   // one point closer to an unmet rule
+const MISS_CAP    = 8;     // clamp on the miss gradient — uncapped it can outweigh
+                           // RULE_W and make the score non-monotonic in rules-met
+
+let restCeil = null;       // set by runSolver, read by restScore; null = no bar
+
+function ruleMet(v, r) {
+  if (r.valueOp === 'gte') return v >= r.value;
+  if (r.valueOp === 'lte') return v <= r.value;
+  return v === r.value;
+}
+
+function ruleDist(v, r) {
+  if (r.valueOp === 'gte') return Math.max(0, r.value - v);
+  if (r.valueOp === 'lte') return Math.max(0, v - r.value);
+  return Math.abs(v - r.value);
+}
+
+// Rest/maximize derives its bar from the rules rather than asking for another
+// number: one below the strictest rule, so leftover slots never bid against the
+// scarce high-value cells a rule still needs. Null when there's nothing to derive from.
+function derivedRestCeiling() {
+  let m = null;
+  for (const r of rules)
+    if (r.valueOp !== 'lte' && (m === null || r.value > m)) m = r.value;
+  return m === null ? null : Math.max(1, m - 1);
+}
+
+// Greedy claim pass. Pure — recomputed on every call, since the hill-climber needs
+// the score to depend only on `placements`.
+function ruleTally(bm, placements, maxRow) {
+  const pool = [];
+  for (const { key } of activeEmptyCells(placements, maxRow)) {
+    if (slotTargets[key]) continue;      // marked cells stay pinScore's domain
+    pool.push(bm[key] || 0);
+  }
+
+  // A mark that's *already* satisfied also counts toward the first rule asking for
+  // the same thing, so a pin and a rule don't each demand their own slot.
+  const pre = new Array(rules.length).fill(0);
+  for (const [k, t] of Object.entries(slotTargets)) {
+    const [r, c] = k.split(',').map(Number);
+    if (!isActiveCell(r, c) || placements[k]) continue;
+    if (!pinMet(bm[k] || 0, t)) continue;
+    const i = rules.findIndex(ru => ru.valueOp === t.op && ru.value === t.value);
+    if (i >= 0) pre[i]++;
+  }
+
+  const claimed = new Array(pool.length).fill(false);
+  const perRule = [];
+
+  for (let i = 0; i < rules.length; i++) {
+    const r = rules[i];
+
+    if (r.countOp === 'atmost') {
+      // A prohibition, not a demand: it scans every cell and claims none. Capping
+      // it at `count` like the others would hide the very surplus it exists to forbid.
+      let sat = pre[i];
+      for (const v of pool) if (ruleMet(v, r)) sat++;
+      perRule.push({ rule: r, satisfying: sat, required: r.count, satisfied: sat <= r.count });
+      continue;
+    }
+
+    const cand = [];
+    for (let j = 0; j < pool.length; j++)
+      if (!claimed[j] && ruleMet(pool[j], r)) cand.push(j);
+
+    // `satisfying` stays uncapped so `exactly` can see an overshoot; only the
+    // *claim* is capped, which is what frees surplus cells for the tiers below.
+    const satisfying = pre[i] + cand.length;
+    const need = Math.max(0, r.count - pre[i]);
+
+    if (cand.length > need)
+      // Cheapest-first: a "≥2" rule takes the 2s before the 5s, so a loose rule
+      // can't eat the scarce high cells a stricter rule further down still needs.
+      cand.sort(r.valueOp === 'lte' ? (a, b) => pool[b] - pool[a]
+                                    : (a, b) => pool[a] - pool[b]);
+
+    for (let j = 0; j < Math.min(need, cand.length); j++) claimed[cand[j]] = true;
+
+    perRule.push({
+      rule: r, satisfying, required: r.count,
+      satisfied: r.countOp === 'exactly' ? satisfying === r.count : satisfying >= r.count,
+    });
+  }
+
+  const rest = [];
+  for (let j = 0; j < pool.length; j++) if (!claimed[j]) rest.push(pool[j]);
+  return { perRule, rest };
+}
+
+function scoreRules(bm, placements, maxRow) {
+  const { perRule, rest } = ruleTally(bm, placements, maxRow);
+  let s = 0;
+
+  for (const pr of perRule) {
+    if (pr.satisfied) { s += RULE_W; continue; }
+    const r = pr.rule, req = pr.required;
+
+    if (pr.satisfying > req) {
+      // Too many qualifying slots (exactly / atmost) — grade by the surplus so the
+      // climber knows to push cells back down.
+      s += req > 0 ? RULE_W * 0.5 * (req / pr.satisfying) : 0;
+      s -= RULE_MISS_W * Math.min(pr.satisfying - req, MISS_CAP);
+    } else {
+      // Short. Credit progress (always < RULE_W, so clearing the rule always wins),
+      // then grade the gap by distance — same shape as pinScore's miss term.
+      s += req > 0 ? RULE_W * 0.5 * (pr.satisfying / req) : 0;
+      const need = req - pr.satisfying;
+      if (need > 0) {
+        // Only the `need` nearest misses matter; a small sorted buffer beats
+        // sorting the whole leftover pool on every one of ~40k scorer calls.
+        const best = [];
+        for (const v of rest) {
+          if (ruleMet(v, r)) continue;
+          const d = ruleDist(v, r);
+          if (best.length < need)          { best.push(d); best.sort((a, b) => a - b); }
+          else if (d < best[need - 1])     { best[need - 1] = d; best.sort((a, b) => a - b); }
+        }
+        let gap = 0;
+        for (let j = 0; j < need; j++) gap += j < best.length ? best[j] : MISS_CAP;
+        s -= RULE_MISS_W * Math.min(gap / need, MISS_CAP);
+      }
+    }
+  }
+
+  return s + restScore(rest) + pinScore(bm, placements);
+}
+
+// Leftover cells no rule claimed. Same shapes as the legacy modes, but the domain
+// is only what's left over — that's what stops excess buff going where nothing asked.
+function restScore(rest) {
+  let total = 0;
+  for (const v of rest) total += v;
+  if (restMode === 'coverage')
+    return rest.filter(v => v > 0).length * CELL_W + total;
+  if (restMode === 'target')
+    return rest.filter(v => v >= restTarget).length * CELL_W +
+           rest.reduce((a, v) => a + Math.min(0, v - restTarget), 0);
+  // No rules to derive a bar from — nothing to count qualifying slots against, so
+  // maximize raw buff instead of borrowing a threshold the user never set.
+  if (restCeil === null) return total;
+  return rest.filter(v => v >= restCeil).length * CELL_W + total;
+}
+
+// Result-time only — the hot path returns a bare scalar.
+function ruleBreakdown(bm, placements, maxRow) {
+  return ruleTally(bm, placements, maxRow).perRule.map((pr, i) => ({
+    idx:       i + 1,
+    countOp:   pr.rule.countOp,
+    valueOp:   pr.rule.valueOp,
+    value:     pr.rule.value,
+    required:  pr.required,
+    matched:   pr.satisfying,
+    satisfied: pr.satisfied,
+  }));
+}
+
+// ── Ruleset validation ───────────────────────────────────────────
+
+const COUNT_OP_LABEL = { exactly: 'Exactly', atleast: 'At least', atmost: 'At most' };
+const VALUE_OP_LABEL = { eq: '=', gte: '≥', lte: '≤' };
+
+function ruleLabel(r) {
+  return `${COUNT_OP_LABEL[r.countOp]} ${r.count} slots at ${VALUE_OP_LABEL[r.valueOp]}${r.value}`;
+}
+
+// A lower bound on empty cells: every tablet takes exactly one cell, and any that
+// fails its activation check simply goes unplaced, freeing more.
+function guaranteedEmptySlots() {
+  const maxRow = totalRows();
+  let totalActive = 0, marked = 0;
+  for (let r = 1; r <= maxRow; r++)
+    for (let c = 1; c <= COLS; c++) {
+      if (!isActiveCell(r, c)) continue;
+      totalActive++;
+      if (slotTargets[`${r},${c}`]) marked++;
+    }
+  let poolCount = mergedTablets.length;
+  for (const id of Object.keys(collection)) poolCount += collection[id];
+  return totalActive - Math.min(poolCount, totalActive - marked);
+}
+
+// Cheap static checks — no grid search. Returns an error string, or null if OK.
+// This only catches provably-infeasible rulesets; real feasibility depends on
+// tablet shapes and rotations, which only the search can explore.
+function validateRules(rs = rules) {
+  for (const r of rs) {
+    if (!Number.isInteger(r.count) || r.count < 0)
+      return 'Slot counts must be whole numbers of 0 or more.';
+    if (!Number.isInteger(r.value) || r.value < -20 || r.value > 20)
+      return 'Buff values must be whole numbers between -20 and 20.';
+  }
+
+  let demand = 0;
+  for (const r of rs)
+    if (r.countOp === 'exactly' || r.countOp === 'atleast') demand += r.count;
+  const avail = guaranteedEmptySlots();
+  if (demand > avail)
+    return `Rules require ${demand} empty slots but only ${avail} are guaranteed with your current collection.`;
+
+  for (let i = 0; i < rs.length; i++)
+    for (let j = i + 1; j < rs.length; j++) {
+      const a = rs[i], b = rs[j];
+      if (a.valueOp !== b.valueOp || a.value !== b.value) continue;
+      if (rulesClash(a, b) || rulesClash(b, a))
+        return `"${ruleLabel(a)}" and "${ruleLabel(b)}" contradict each other.`;
+    }
+  return null;
+}
+
+function rulesClash(a, b) {
+  if (a.countOp === 'exactly' && b.countOp === 'exactly') return a.count !== b.count;
+  if (a.countOp === 'exactly' && b.countOp === 'atmost')  return a.count >  b.count;
+  if (a.countOp === 'exactly' && b.countOp === 'atleast') return a.count <  b.count;
+  if (a.countOp === 'atleast' && b.countOp === 'atmost')  return a.count >  b.count;
+  return false;
 }
 
 function shuffle(arr) {

@@ -29,6 +29,7 @@ function init() {
   renderGrid();
   updateActiveBar();
   updateMarkUI();
+  updateEngineUI();
 }
 
 bootstrap();

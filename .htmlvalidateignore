@@ -1,0 +1,2 @@
+# Dev dependencies ship plenty of fixture HTML that isn't ours to validate.
+node_modules/

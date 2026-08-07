@@ -1,0 +1,42 @@
+name: Pages Build Check
+
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pin the toolchain — without this the Node version drifts with the runner image.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Runs before `npm ci` so the artifact is the deployable site, not the site
+      # plus a node_modules tree.
+      - name: Validate Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Install dev tooling
+        run: npm ci
+
+      - name: Validate HTML
+        run: npm run lint:html
+
+      - name: Check JS syntax
+        run: npm run check:syntax
+
+      - name: Lint JS
+        run: npm run lint:js
+
+      - name: Check for broken local links
+        run: npm run check:links
