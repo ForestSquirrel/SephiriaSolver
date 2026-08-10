@@ -43,8 +43,17 @@ function setTabletSortMode(mode) {
 
 function renderPicker() {
   const el = document.getElementById('tablet-picker');
+  const search = (document.getElementById('picker-search')?.value || '').toLowerCase();
+  const noTabletsFound = document.getElementById('no-tablets-found');
+  noTabletsFound.style.display = 'none';
   el.innerHTML = '';
-  const items = [...TABLETS_DATA.items];
+  const items = [...TABLETS_DATA.items].filter(
+    t => !search || t.name.toLowerCase().includes(search)
+  );
+  if (!items.length) {
+    noTabletsFound.style.display = 'block';
+    return;
+  }
   if (tabletSortMode === 'name') {
     items.sort((a, b) => a.name.localeCompare(b.name));
   } else {

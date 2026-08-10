@@ -134,6 +134,30 @@ body {
   flex-shrink: 0;
 }
 
+.picker-search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-dim);
+  padding: clamp(5px,0.5vh,9px) clamp(8px,0.8vw,14px);
+}
+
+.picker-search-container input {
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 0.65vw, 12px);
+  padding: clamp(3px, 0.3vh, 5px) clamp(4px, 0.35vw, 7px);
+  border-radius: 3px;
+  width: 100%;
+  outline: 0;
+}
+
+.picker-search-container input:focus {
+  border-color: var(--gold);
+}
+
 .tablet-picker-wrap {
   overflow-y: auto;
   padding: clamp(5px,0.5vw,10px);
