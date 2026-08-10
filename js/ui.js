@@ -330,7 +330,6 @@ function renderGrid() {
             img.src = `sprites/${sid}.png`;
             img.style.cssText = 'width:50%;height:100%;object-fit:cover;image-rendering:pixelated;pointer-events:none;';
             img.onerror = function () { this.style.display = 'none'; };
-            imgs.push(img);
             wrap.appendChild(img);
           });
         } else {
