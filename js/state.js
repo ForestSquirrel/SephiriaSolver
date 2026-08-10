@@ -59,7 +59,7 @@ let restTarget   = 3;           // only read when restMode === 'target'
 
 // UI state
 let markMode       = null;   // null | 'x2' | 'target' — grid cell marking tool
-let pickerExpanded = false;
+let pickerExpanded = true;
 let starterGrid    = false;  // 6×4 base grid instead of 6×5
 let tabletSortMode = 'id';
 

@@ -8,13 +8,13 @@
   --border: #2e3448;
   --border-bright: #404868;
   --gold: #c8a84b;
-  --gold-dim: #7a6530;
+  --gold-dim: #b69943;
   --gold-bright: #f0cc70;
-  --teal: #4ecdc4;
+  --teal: #53eee4;
   --red: #e05c5c;
   --green: #5cbe7a;
-  --text: #c8cdd8;
-  --text-dim: #6b7280;
+  --text: #d5d8e0;
+  --text-dim: #c5c9d3;
   --text-bright: #e8ecf4;
   /* cell size scales with viewport: comfortable on 1080p, larger on 2K/4K */
   --cell: clamp(52px, 4.2vw, 88px);
