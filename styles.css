@@ -1415,6 +1415,9 @@ body {
   display: flex; align-items: center; justify-content: center;
   position: relative;
 }
+.cell-tablet .img-container {
+  width: 100%; height: 100%;
+}
 .cell-tablet img {
   width: 100%; height: 100%;
   object-fit: cover; image-rendering: pixelated;
@@ -1435,7 +1438,7 @@ body {
   pointer-events: none;
 }
 .cell-tablet .rot-badge.hidden { display: none; }
-.cell-tablet.selected-tablet {
+.cell-tablet.selected-tablet .img-container {
   outline: 2px solid var(--gold);
   outline-offset: -2px;
 }

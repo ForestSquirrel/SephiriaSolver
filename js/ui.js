@@ -328,17 +328,18 @@ function renderGrid() {
       if (placement) {
         const td   = TABLET_MAP[placement.tabletId];
         const wrap = document.createElement('div');
+        const imgContainer = document.createElement('div');
+        imgContainer.className = 'img-container';
         wrap.className = 'cell-tablet' + (selectedCellKey === key ? ' selected-tablet' : '');
 
         if (td.spriteA !== undefined) {
           // Merged tablet — two sprites side by side
-          wrap.style.flexDirection = 'row';
           [td.spriteA, td.spriteB].forEach(sid => {
             const img = document.createElement('img');
             img.src = `sprites/${sid}.png`;
             img.style.cssText = 'width:50%;height:100%;object-fit:cover;image-rendering:pixelated;pointer-events:none;';
             img.onerror = function () { this.style.display = 'none'; };
-            wrap.appendChild(img);
+            imgContainer.appendChild(img);
           });
         } else {
           const img = document.createElement('img');
@@ -350,14 +351,16 @@ function renderGrid() {
             const fb = document.createElement('span');
             fb.className = 'fallback-grid';
             fb.textContent = td.name.substring(0, 8);
-            wrap.insertBefore(fb, wrap.firstChild);
+            imgContainer.insertBefore(fb, imgContainer.firstChild);
           };
-          wrap.appendChild(img);
+          imgContainer.appendChild(img);
         }
 
         const badge = document.createElement('span');
         badge.className = 'rot-badge' + (placement.rotation === 0 ? ' hidden' : '');
         badge.textContent = ['↑', '→', '↓', '←'][placement.rotation];
+        imgContainer.style.transform = 'rotate(' + (placement.rotation * 90) + 'deg)';
+        wrap.appendChild(imgContainer);
         wrap.appendChild(badge);
         cell.appendChild(wrap);
 
