@@ -15,6 +15,8 @@ const BASE_COLUMNS = [
   { key: 'total',   label: 'Total buff', get: r => r.stats.total },
   { key: 'covered', label: 'Covered',    get: r => r.stats.covered },
   { key: 'pins',    label: 'Targets',    get: r => r.stats.pinsMet },
+  { key: 'items',   label: 'Items',      get: r => r.stats.itemsActive },
+  { key: 'itemsfull', label: 'At full',   get: r => r.stats.itemsFull },
   { key: 'rules',   label: 'Rules',      get: r => r.ruleBreakdown ? r.ruleBreakdown.filter(b => b.satisfied).length : 0 },
 ];
 
@@ -52,6 +54,7 @@ function filterSortResults(results, sort, filters, expanded = new Set()) {
       if (filters.minBuff    != null && s.total   < filters.minBuff)    return false;
       if (filters.minCovered != null && s.covered < filters.minCovered) return false;
       if (filters.rulesOnly  && !res.rulesSatisfied)                    return false;
+      if (filters.itemsOnly  && !res.itemsSatisfied)                    return false;
       if (filters.slotValue != null &&
           countAtBuff(s.dist, filters.slotOp, filters.slotValue) < (filters.slotCount || 1))
         return false;
@@ -99,9 +102,12 @@ function allResultColumns(results) {
 function visibleResultColumns(results) {
   const anyPins  = results.some(r => r.stats.pinsTot > 0);
   const anyRules = results.some(r => r.ruleBreakdown);
+  const anyItems = results.some(r => r.stats.itemsTot > 0);
   return allResultColumns(results).filter(c =>
-    (c.key !== 'pins'  || anyPins) &&
-    (c.key !== 'rules' || anyRules));
+    (c.key !== 'pins'      || anyPins) &&
+    (c.key !== 'items'     || anyItems) &&
+    (c.key !== 'itemsfull' || anyItems) &&
+    (c.key !== 'rules'     || anyRules));
 }
 
 // ── Open / Close ─────────────────────────────────────────────────
@@ -175,6 +181,11 @@ function buildResultsFilterBar() {
   if (solverResults.some(r => r.ruleBreakdown))
     bar.appendChild(filterCheck('Rules satisfied only', resultsFilters.rulesOnly, v => {
       resultsFilters.rulesOnly = v; renderResultsTable();
+    }));
+
+  if (solverResults.some(r => r.itemBreakdown))
+    bar.appendChild(filterCheck('Items satisfied only', resultsFilters.itemsOnly, v => {
+      resultsFilters.itemsOnly = v; renderResultsTable();
     }));
 
   bar.appendChild(filterCheck('Collapse identical scores', resultsFilters.collapseTies, v => {

@@ -10,7 +10,8 @@
   --gold: #c8a84b;
   --gold-dim: #7a6530;
   --gold-bright: #f0cc70;
-  --teal: #4ecdc4;
+  --teal: #4ecdc4;      /* reserved for exemption slots — the game uses cyan for those */
+  --violet: #a78bfa;    /* target-slot marks, so they never read as an exemption */
   --red: #e05c5c;
   --green: #5cbe7a;
   --text: #c8cdd8;
@@ -48,7 +49,19 @@
   letter-spacing: 1px;
   margin-top: 2px;
 }
+.topbar-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 0.6vw, 12px);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Buttons and anchors share this — they're the same control to the reader. */
 .topbar-link {
+  font-family: inherit;
+  background: none;
+  cursor: pointer;
   font-size: clamp(10px, 0.7vw, 12px);
   letter-spacing: 1.5px;
   text-transform: uppercase;
