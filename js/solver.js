@@ -2,29 +2,47 @@
 // Depends on: state.js, engine.js
 
 async function runSolver() {
+  if (solverRunning) return;
   const ids       = Object.keys(collection).map(Number).filter(id => collection[id] > 0);
   const mergedIds = mergedTablets.map(mt => mt.id);
   if (!ids.length && !mergedIds.length) { setLog('Add tablets to collection first', 'err'); return; }
 
+  const usingRules = solverEngine === 'ruleset';
+  const runMode    = solveMode;
+  const targetVal  = document.getElementById('target-val').valueAsNumber;
+  const highVal    = document.getElementById('highval-val').valueAsNumber;
+  if (!usingRules && runMode === 'target' && !validBuffInput(targetVal)) {
+    setLog('Target value must be a whole number between -20 and 20', 'err');
+    return;
+  }
+  if (!usingRules && runMode === 'maximize' && !validBuffInput(highVal)) {
+    setLog('High-value threshold must be a whole number between -20 and 20', 'err');
+    return;
+  }
+
+  const runVersion = solverConfigVersion;
+
   const btn = document.getElementById('solve-btn');
   btn.disabled = true;
   btn.classList.add('running');
+  solverRunning = true;
   setLog('Solving…');
   solverResults    = [];
   appliedResultIdx = -1;
   renderResults();
   await new Promise(r => setTimeout(r, 10)); // let UI repaint
 
-  const maxRow    = totalRows();
-  const parsedTarget = Number.parseInt(document.getElementById('target-val').value, 10);
-  const parsedHigh   = Number.parseInt(document.getElementById('highval-val').value, 10);
-  const targetVal = Number.isNaN(parsedTarget) ? 3 : parsedTarget;
-  const highVal   = Number.isNaN(parsedHigh)   ? 5 : parsedHigh;
+  const maxRow = totalRows();
 
-  const usingRules = solverEngine === 'ruleset';
   if (usingRules) {
     const bad = validateRules();
-    if (bad) { setLog(bad, 'err'); btn.disabled = false; btn.classList.remove('running'); return; }
+    if (bad) {
+      setLog(bad, 'err');
+      btn.disabled = false;
+      btn.classList.remove('running');
+      solverRunning = false;
+      return;
+    }
     // Hoisted out of the scorer — it's a pure function of `rules`, and the scorer
     // runs tens of thousands of times per solve. Null when there's no rule to
     // derive a bar from, which means "just push the buff as high as it goes".
@@ -32,7 +50,7 @@ async function runSolver() {
   }
   const scoreOf = usingRules
     ? p => scoreRules(computeBuffMap(p, maxRow), p, maxRow)
-    : p => scoreP(p, maxRow, solveMode, targetVal, highVal);
+    : p => scoreP(p, maxRow, runMode, targetVal, highVal);
 
   const pool = [];
   for (const id of ids)
@@ -108,6 +126,20 @@ async function runSolver() {
   }
   showSolveProgress(false);
 
+  btn.disabled = false;
+  btn.classList.remove('running');
+  solverRunning = false;
+
+  // Configuration mutations cancel the search. Do not publish even the final
+  // in-flight attempt: it may have observed a partially changed configuration.
+  if (runVersion !== solverConfigVersion) {
+    solverResults    = [];
+    appliedResultIdx = -1;
+    setLog('Search cancelled because solver settings changed', 'err');
+    renderResults();
+    return;
+  }
+
   // A layout that clears the ruleset outranks one that doesn't, whatever the tiers
   // worked out to — the weights make that almost always true anyway, but "almost"
   // isn't good enough for what gets shown as Option 1.
@@ -115,8 +147,6 @@ async function runSolver() {
   // Everything is kept — renderResults shows the top three, the table browses the rest.
   solverResults = results;
 
-  btn.disabled = false;
-  btn.classList.remove('running');
   const n     = solverResults.length;
   const secs  = ((Date.now() - startedAt) / 1000).toFixed(1);
   const short = usingRules && n && !solverResults[0].rulesSatisfied;
@@ -127,6 +157,10 @@ async function runSolver() {
     : `Done in ${secs}s — ${n} solution(s) found`,
     short ? 'err' : 'ok');
   renderResults();
+}
+
+function validBuffInput(value) {
+  return Number.isInteger(value) && value >= -20 && value <= 20;
 }
 
 // One macrotask between runs so the browser can repaint the progress bar. Nested
@@ -142,9 +176,11 @@ function localSearch(placements, maxRow, scoreOf, cellKeys, iters) {
     if (keys.length > 0) {
       const k  = keys[Math.floor(Math.random() * keys.length)];
       const td = TABLET_MAP[placements[k].tabletId];
-      if (!td.disableRotate) {
+      const rotations = td.disableRotate ? [0] : (td.effectiveRotations ?? [0, 1, 2, 3]);
+      if (rotations.length > 1) {
         const orig = placements[k].rotation;
-        placements[k].rotation = (orig + 1 + Math.floor(Math.random() * 3)) % 4;
+        const alternatives = rotations.filter(rot => rot !== orig);
+        placements[k].rotation = alternatives[Math.floor(Math.random() * alternatives.length)];
         if (scoreOf(placements) < base) placements[k].rotation = orig;
       }
     }
@@ -265,23 +301,15 @@ function derivedRestCeiling() {
 // the score to depend only on `placements`.
 function ruleTally(bm, placements, maxRow) {
   const pool = [];
+  const marked = [];
   for (const { key } of activeEmptyCells(placements, maxRow)) {
-    if (slotTargets[key]) continue;      // marked cells stay pinScore's domain
-    pool.push(bm[key] || 0);
-  }
-
-  // A mark that's *already* satisfied also counts toward the first rule asking for
-  // the same thing, so a pin and a rule don't each demand their own slot.
-  const pre = new Array(rules.length).fill(0);
-  for (const [k, t] of Object.entries(slotTargets)) {
-    const [r, c] = k.split(',').map(Number);
-    if (!isActiveCell(r, c) || placements[k]) continue;
-    if (!pinMet(bm[k] || 0, t)) continue;
-    const i = rules.findIndex(ru => ru.valueOp === t.op && ru.value === t.value);
-    if (i >= 0) pre[i]++;
+    const value = bm[key] || 0;
+    if (slotTargets[key]) marked.push(value);
+    else                  pool.push(value);
   }
 
   const claimed = new Array(pool.length).fill(false);
+  const markedClaimed = new Array(marked.length).fill(false);
   const perRule = [];
 
   for (let i = 0; i < rules.length; i++) {
@@ -290,28 +318,35 @@ function ruleTally(bm, placements, maxRow) {
     if (r.countOp === 'atmost') {
       // A prohibition, not a demand: it scans every cell and claims none. Capping
       // it at `count` like the others would hide the very surplus it exists to forbid.
-      let sat = pre[i];
+      let sat = 0;
       for (const v of pool) if (ruleMet(v, r)) sat++;
+      for (const v of marked) if (ruleMet(v, r)) sat++;
       perRule.push({ rule: r, satisfying: sat, required: r.count, satisfied: sat <= r.count });
       continue;
     }
 
     const cand = [];
     for (let j = 0; j < pool.length; j++)
-      if (!claimed[j] && ruleMet(pool[j], r)) cand.push(j);
+      if (!claimed[j] && ruleMet(pool[j], r)) cand.push({ source: 'pool', idx: j, value: pool[j] });
+    for (let j = 0; j < marked.length; j++)
+      if (!markedClaimed[j] && ruleMet(marked[j], r)) cand.push({ source: 'marked', idx: j, value: marked[j] });
 
     // `satisfying` stays uncapped so `exactly` can see an overshoot; only the
     // *claim* is capped, which is what frees surplus cells for the tiers below.
-    const satisfying = pre[i] + cand.length;
-    const need = Math.max(0, r.count - pre[i]);
+    const satisfying = cand.length;
+    const need = r.count;
 
     if (cand.length > need)
       // Cheapest-first: a "≥2" rule takes the 2s before the 5s, so a loose rule
       // can't eat the scarce high cells a stricter rule further down still needs.
-      cand.sort(r.valueOp === 'lte' ? (a, b) => pool[b] - pool[a]
-                                    : (a, b) => pool[a] - pool[b]);
+      cand.sort(r.valueOp === 'lte' ? (a, b) => b.value - a.value
+                                    : (a, b) => a.value - b.value);
 
-    for (let j = 0; j < Math.min(need, cand.length); j++) claimed[cand[j]] = true;
+    for (let j = 0; j < Math.min(need, cand.length); j++) {
+      const c = cand[j];
+      if (c.source === 'pool') claimed[c.idx] = true;
+      else markedClaimed[c.idx] = true;
+    }
 
     perRule.push({
       rule: r, satisfying, required: r.count,
@@ -437,7 +472,6 @@ function validateRules(rs = rules) {
   for (let i = 0; i < rs.length; i++)
     for (let j = i + 1; j < rs.length; j++) {
       const a = rs[i], b = rs[j];
-      if (a.valueOp !== b.valueOp || a.value !== b.value) continue;
       if (rulesClash(a, b) || rulesClash(b, a))
         return `"${ruleLabel(a)}" and "${ruleLabel(b)}" contradict each other.`;
     }
@@ -445,10 +479,29 @@ function validateRules(rs = rules) {
 }
 
 function rulesClash(a, b) {
-  if (a.countOp === 'exactly' && b.countOp === 'exactly') return a.count !== b.count;
-  if (a.countOp === 'exactly' && b.countOp === 'atmost')  return a.count >  b.count;
-  if (a.countOp === 'exactly' && b.countOp === 'atleast') return a.count <  b.count;
-  if (a.countOp === 'atleast' && b.countOp === 'atmost')  return a.count >  b.count;
+  const sameCondition = a.valueOp === b.valueOp && a.value === b.value;
+  if (sameCondition) {
+    if (a.countOp === 'exactly' && b.countOp === 'exactly') return a.count !== b.count;
+    if (a.countOp === 'exactly' && b.countOp === 'atmost')  return a.count >  b.count;
+    if (a.countOp === 'exactly' && b.countOp === 'atleast') return a.count <  b.count;
+    if (a.countOp === 'atleast' && b.countOp === 'atmost')  return a.count >  b.count;
+  }
+
+  // `atmost` is a global prohibition, so a demand on any stricter subset cannot
+  // require more qualifying cells than that broader cap permits.
+  return a.countOp === 'atmost' && b.countOp !== 'atmost' &&
+         ruleConditionSubset(b, a) && b.count > a.count;
+}
+
+// Whether every value matched by `a` must also be matched by `b`.
+function ruleConditionSubset(a, b) {
+  if (a.valueOp === 'eq') {
+    if (b.valueOp === 'eq')  return a.value === b.value;
+    if (b.valueOp === 'gte') return a.value >= b.value;
+    return a.value <= b.value;
+  }
+  if (a.valueOp === 'gte' && b.valueOp === 'gte') return a.value >= b.value;
+  if (a.valueOp === 'lte' && b.valueOp === 'lte') return a.value <= b.value;
   return false;
 }
 

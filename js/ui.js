@@ -82,8 +82,18 @@ function renderPicker() {
 
 // ── Collection ───────────────────────────────────────────────────
 
+function invalidateSolverResults() {
+  solverConfigVersion++;
+  if (solverRunning) solverCancelled = true;
+  solverResults    = [];
+  appliedResultIdx = -1;
+  closeResultsDialog();
+  renderResults();
+}
+
 function addToCollection(id) {
   collection[id] = (collection[id] || 0) + 1;
+  invalidateSolverResults();
   renderCollection();
 }
 
@@ -144,6 +154,7 @@ function renderCollection() {
         return;
       }
       collection[id]--;
+      invalidateSolverResults();
       renderCollection();
     });
     const valEl = document.createElement('span');
@@ -152,7 +163,12 @@ function renderCollection() {
     const plus = document.createElement('button');
     plus.className = 'count-btn';
     plus.textContent = '+';
-    plus.addEventListener('click', e => { e.stopPropagation(); collection[id]++; renderCollection(); });
+    plus.addEventListener('click', e => {
+      e.stopPropagation();
+      collection[id]++;
+      invalidateSolverResults();
+      renderCollection();
+    });
     ctrl.append(minus, valEl, plus);
     item.appendChild(ctrl);
 
@@ -171,6 +187,7 @@ function renderCollection() {
         selectedRotation = 0;
         updateActiveBar();
       }
+      invalidateSolverResults();
       renderCollection();
       renderGrid();
     });
@@ -222,7 +239,13 @@ function renderCollection() {
         if (p.tabletId === mt.id) delete gridPlacements[key];
       delete TABLET_MAP[mt.id];
       mergedTablets.splice(mergedTablets.indexOf(mt), 1);
-      if (selectedTabletId === mt.id) { selectedTabletId = null; updateActiveBar(); }
+      if (selectedTabletId === mt.id) {
+        selectedTabletId = null;
+        selectedCellKey  = null;
+        selectedRotation = 0;
+        updateActiveBar();
+      }
+      invalidateSolverResults();
       renderCollection();
       renderGrid();
     });
@@ -305,6 +328,7 @@ function renderGrid() {
         cell.title = `Add expansion slot (${expandedSlots + 1}/${MAX_EXPAND})`;
         cell.addEventListener('click', () => {
           expandedSlots++;
+          invalidateSolverResults();
           renderGrid();
           updateStats();
         });
@@ -434,7 +458,11 @@ function toggleMark(key) {
       x2Slots[key] = true;
     }
   } else if (markMode === 'target') {
-    const value = parseInt(document.getElementById('mark-target-val').value) || 0;
+    const value = document.getElementById('mark-target-val').valueAsNumber;
+    if (!validBuffInput(value)) {
+      setLog('Target slot value must be a whole number between -20 and 20', 'err');
+      return;
+    }
     const op    = document.getElementById('mark-target-op').value;
     const cur   = slotTargets[key];
     if (cur && cur.value === value && cur.op === op) delete slotTargets[key];
@@ -443,13 +471,16 @@ function toggleMark(key) {
     return;
   }
   setLog('');
+  invalidateSolverResults();
   updateMarkUI();
   renderGrid();
 }
 
 function clearMarks() {
+  if (!Object.keys(x2Slots).length && !Object.keys(slotTargets).length) return;
   x2Slots     = {};
   slotTargets = {};
+  invalidateSolverResults();
   updateMarkUI();
   renderGrid();
 }
@@ -632,14 +663,12 @@ function clearGrid() {
   selectedTabletId = null;
   selectedRotation = 0;
   expandedSlots    = 0;
-  solverResults    = [];
-  appliedResultIdx = -1;
+  invalidateSolverResults();
   pruneMarks();          // expansion reset may have dropped marked cells off the grid
   updateMarkUI();
   renderGrid();
   renderCollection();
   updateActiveBar();
-  renderResults();
   setLog('');
 }
 
@@ -656,7 +685,9 @@ function toggleStarterGrid() {
 // ── Solver Mode Controls ─────────────────────────────────────────
 
 function setMode(mode) {
+  if (solveMode === mode) return;
   solveMode = mode;
+  invalidateSolverResults();
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(`btn-mode-${mode}`).classList.add('active');
   updateEngineUI();
@@ -664,7 +695,9 @@ function setMode(mode) {
 
 // Legacy keeps the three global modes; Rulesets swaps them for the rules dialog.
 function setEngine(engine) {
+  if (solverEngine === engine) return;
   solverEngine = engine;
+  invalidateSolverResults();
   document.querySelectorAll('.engine-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(`btn-engine-${engine}`).classList.add('active');
   updateEngineUI();

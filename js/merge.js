@@ -383,6 +383,7 @@ function doMerge() {
   if (!merged) { updateMergeConfirmBtn(); return; }
   mergedTablets.push(merged);
   TABLET_MAP[merged.id] = merged;
+  invalidateSolverResults();
   renderCollection();
   closeMergeDialog();
 }

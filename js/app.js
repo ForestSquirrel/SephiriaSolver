@@ -30,6 +30,8 @@ function init() {
   updateActiveBar();
   updateMarkUI();
   updateEngineUI();
+  for (const id of ['target-val', 'highval-val'])
+    document.getElementById(id).addEventListener('input', invalidateSolverResults);
 }
 
 bootstrap();

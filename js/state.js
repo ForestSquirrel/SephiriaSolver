@@ -36,6 +36,10 @@ let appliedResultIdx = -1;
 // Quick keeps the old snappy feel while still finding far more than the previous 3.
 let searchBudgetMs  = 1000;
 let solverCancelled = false;
+let solverRunning   = false;
+// Incremented whenever an input to the solver changes. A running search captures
+// the current value and discards its work if the configuration changes mid-run.
+let solverConfigVersion = 0;
 
 // Results table view state (js/results.js). Default sort is solver order, which is
 // already best-first — the raw score is never shown, it means nothing to a player.

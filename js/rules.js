@@ -107,6 +107,7 @@ function applyRules() {
   rules      = ruleDraft.map(r => ({ ...r }));
   restMode   = ruleRestMode;
   restTarget = ruleRestTgt;
+  invalidateSolverResults();
   updateEngineUI();   // rule count changed — button label and the high-value row follow
   closeRulesDialog();
 }
@@ -221,7 +222,7 @@ function ruleNumber(value, min, max, onChange) {
   inp.addEventListener('input', () => {
     // Empty / mid-edit input parses to NaN — let validation report it rather
     // than silently substituting a number the user never typed.
-    onChange(inp.value === '' ? NaN : parseInt(inp.value, 10));
+    onChange(inp.valueAsNumber);
   });
   return inp;
 }
