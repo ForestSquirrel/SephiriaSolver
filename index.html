@@ -7,6 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
 <link rel="stylesheet" href="styles.css">
+<script data-goatcounter="https://forestsquirrel.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
 
@@ -19,9 +21,13 @@
 <header class="topbar">
   <div class="topbar-titles">
     <h1>Tablet Optimizer</h1>
-    <div class="subtitle">inventory grid solver &nbsp;·&nbsp; Rulesets update</div>
+    <div class="subtitle">inventory grid solver &nbsp;·&nbsp; Items update</div>
   </div>
-  <a class="topbar-link" href="Guides/">◆ Guides</a>
+  <nav class="topbar-links">
+    <button class="topbar-link" type="button" onclick="openHelpDialog()">◆ Help</button>
+    <button class="topbar-link" type="button" onclick="openCreditsDialog()">◆ Credits</button>
+    <a class="topbar-link" href="Guides/">◆ Guides</a>
+  </nav>
 </header>
 
 <div class="app">
@@ -41,6 +47,10 @@
             <button class="toggle-btn" id="picker-sort-btn" onclick="event.stopPropagation(); toggleTabletSort()" type="button">Sort: ID</button>
             <button class="toggle-btn" id="picker-toggle-btn">Expand ▲</button>
           </span>
+        </div>
+        <div class="picker-search-container">
+          <input id="picker-search" type="search" placeholder="Search..." oninput="renderPicker()">
+          <div id="no-tablets-found">No tablets found</div>
         </div>
         <div class="tablet-picker-wrap">
           <div class="tablet-picker-grid" id="tablet-picker"></div>
@@ -96,28 +106,24 @@
       <div class="stat"><b>TABLETS PLACED</b> <span id="stat-placed">0</span></div>
       <div class="stat"><b>GRID SIZE</b> <span id="stat-grid">6×5 +0</span></div>
       <div class="stat" id="stat-pins-wrap" style="display:none"><b>TARGETS MET</b> <span id="stat-pins">0/0</span></div>
+      <div class="stat" id="stat-items-wrap" style="display:none"><b>ITEMS ACTIVE</b> <span id="stat-items">0/0</span></div>
     </div>
-    <div class="changelog-row">
-      <div class="changelog-panel">
-        <div class="changelog-title">Changelog — Rulesets update</div>
-        <div class="changelog-content">
-          <ul>
-            <li>Added Rulesets — ask for a count of slots at a value without pinning which slots</li>
-            <li>Solver keeps every layout it finds — browse, sort and filter them in the results table</li>
-            <li>Search time is now a budget you pick, with progress and cancel</li>
-            <li>Tweaked max grid to 60 slots</li>
-          </ul>
-        </div>
-      </div>
-      <div class="changelog-panel todo-panel">
-        <div class="changelog-title">TODO</div>
-        <div class="changelog-content">
-          <ul>
-            <li>I still have a feeling 1 Tablet is missing</li>
-            <li>Rulesets for items which require specific placement</li>
-            <li>More Guides &lt;3</li>
-          </ul>
-        </div>
+    <div class="contrib-banner">
+      <p class="contrib-hello">Hey guys, ForestSquirrel here!</p>
+      <p>
+        If you wish to contribute directly you can
+        <a href="https://github.com/ForestSquirrel/SephiriaSolver" target="_blank" rel="noopener">fork &amp; PR</a>.
+      </p>
+      <p>
+        Any bugs or issues can be reported in the
+        <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3741701046" target="_blank" rel="noopener">Steam guide</a>
+        comments, or as open issues on
+        <a href="https://github.com/ForestSquirrel/SephiriaSolver" target="_blank" rel="noopener">GitHub</a>.
+      </p>
+      <div class="contrib-paws" aria-hidden="true">
+        <img src="Guides/Assets/ComboIcons/Companion.png" alt="">
+        <img src="Guides/Assets/ComboIcons/Companion.png" alt="">
+        <img src="Guides/Assets/ComboIcons/Companion.png" alt="">
       </div>
     </div>
   </div>
@@ -128,15 +134,15 @@
     <div class="panel-body">
       <div class="section-label" style="margin-bottom:clamp(6px,0.6vh,10px)">Optimization mode</div>
       <div class="engine-btns">
-        <button class="engine-btn active" id="btn-engine-legacy"  onclick="setEngine('legacy')"  type="button">Legacy</button>
-        <button class="engine-btn"        id="btn-engine-ruleset" onclick="setEngine('ruleset')" type="button" title="Ask for a count of slots at a value, without pinning which slots">Rulesets</button>
+        <button class="engine-btn"        id="btn-engine-legacy"  onclick="setEngine('legacy')"  type="button" title="Score every empty slot the same way, with one global goal">Legacy</button>
+        <button class="engine-btn active" id="btn-engine-ruleset" onclick="setEngine('ruleset')" type="button" title="Ask for a count of slots at a value, without pinning which slots">Rulesets</button>
       </div>
-      <div class="mode-btns" id="mode-btns">
+      <div class="mode-btns" id="mode-btns" style="display:none">
         <button class="mode-btn active" id="btn-mode-coverage" onclick="setMode('coverage')">Perfect<br>Coverage</button>
         <button class="mode-btn"        id="btn-mode-maximize" onclick="setMode('maximize')">Maximize</button>
         <button class="mode-btn full"   id="btn-mode-target"   onclick="setMode('target')">Target Value</button>
       </div>
-      <button class="rules-open-btn" id="rules-open-btn" onclick="openRulesDialog()" type="button" style="display:none">Manage Rules</button>
+      <button class="rules-open-btn" id="rules-open-btn" onclick="openRulesDialog()" type="button">Manage Rules</button>
       <div class="target-row" id="highval-row" style="display:none">
         <label>HIGH VALUE ≥</label>
         <input type="number" id="highval-val" value="5" min="-20" max="20">
@@ -177,11 +183,13 @@
 
 <script src="js/state.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/items.js"></script>
 <script src="js/solver.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/merge.js"></script>
 <script src="js/rules.js"></script>
 <script src="js/results.js"></script>
+<script src="js/about.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

@@ -209,6 +209,20 @@ function createMergedTablet(tdA, rotA, tdB, rotB) {
   bakeLineBuff(tdA, rotA);
   bakeLineBuff(tdB, rotB);
 
+  // Exemption offsets are geometry, so they bake exactly like effects do. Without
+  // this a merged Link would silently stop exempting anything.
+  const grantsExemption = [];
+  function bakeExemption(td, rot) {
+    if (!td.grantsExemption) return;
+    const r = td.disableRotate ? 0 : rot;
+    for (const [dx, dy] of td.grantsExemption) {
+      const [rx, ry] = rotateXY(dx, dy, r);
+      if (!grantsExemption.some(([x, y]) => x === rx && y === ry)) grantsExemption.push([rx, ry]);
+    }
+  }
+  bakeExemption(tdA, rotA);
+  bakeExemption(tdB, rotB);
+
   // parityBuff is rotation-invariant — just sum the two sources componentwise
   const parityBuff = {
     odd:  (tdA.parityBuff?.odd  ?? 0) + (tdB.parityBuff?.odd  ?? 0),
@@ -225,6 +239,7 @@ function createMergedTablet(tdA, rotA, tdB, rotB) {
     ...(effects.length  ? { effects }  : {}),
     ...(lineBuff.length ? { lineBuff } : {}),
     ...(parityBuff.odd || parityBuff.even ? { parityBuff } : {}),
+    ...(grantsExemption.length ? { grantsExemption } : {}),
     ...(activation.value ? { activationPosition: activation.value } : {}),
   };
 }
@@ -238,4 +253,74 @@ function checkActivation(td, col, row, maxRow) {
     if (pos === 'right'  && col === COLS)                 return true;
   }
   return false;
+}
+
+// ── Item Placement Rules ─────────────────────────────────────────
+
+// Items get their own predicate rather than an extended activationPosition:
+// exemptions need to see `placements`, which checkActivation has no access to, and
+// mergeActivationPositions reasons over the top/bottom/left/right set as a lattice
+// that 'outermost' and 'rowphase' have no place in.
+
+// bottomRowForCol is already per-column, so this stays correct across the ragged
+// edge of a partial expansion row with no special case.
+function isOutermost(row, col) {
+  return row === 1 || col === 1 || col === COLS || row === bottomRowForCol(col);
+}
+
+function itemAllowedAt(cfg, col, row, maxRow, ctx) {
+  if (!isActiveCell(row, col) || row > maxRow) return false;
+
+  // A pin that falls off the grid can never be satisfied, so the position itself is
+  // illegal — grading it in the scorer instead would let greedy park a Golden Needle
+  // in row 1 and eat the miss penalty forever.
+  for (const p of cfg.pins) {
+    const r = row - p.dy, c = col + p.dx;
+    if (!isActiveCell(r, c) || r > maxRow) return false;
+  }
+
+  // Same argument for a scope too small to hold what the item reserves: a Telescope
+  // in a corner has three neighbours and can never host five planets. Purely
+  // geometric — no occupancy — so baseLegalCells stays precomputable per solve.
+  const need = itemNeed(cfg);
+  if (need && itemScopeCells(cfg, row, col, maxRow).length < need) return false;
+
+  if (!cfg.posClass) return true;
+  // An exemption waives the position class only — never the pins above.
+  if (ctx && ctx.isExempt(`${row},${col}`)) return true;
+
+  switch (cfg.posClass) {
+    case 'top':       return row === 1;
+    case 'bottom':    return row === bottomRowForCol(col);
+    case 'left':      return col === 1;
+    case 'right':     return col === COLS;
+    case 'outermost': return isOutermost(row, col);
+    case 'innermost': return !isOutermost(row, col);
+    case 'rowphase':  return ((row - 1) % 4) === cfg.phase;
+    default:          return true;
+  }
+}
+
+// One predicate for both entity kinds, so the search doesn't branch at every site.
+function placementAllowed(td, col, row, maxRow, ctx) {
+  if (td.kind === 'item') {
+    const cfg = itemPlan && itemPlan[td.id];
+    return cfg ? itemAllowedAt(cfg, col, row, maxRow, ctx) : true;
+  }
+  return checkActivation(td, col, row, maxRow);
+}
+
+// Cells where a placed tablet lets an item ignore its position class. Purely
+// geometric — derived from placement and rotation, exactly like effects, and
+// deliberately independent of the buff footprint (Link exempts the cell *below*
+// while buffing the one above).
+function exemptCellsFor(td, col, row, rotation) {
+  const out = [];
+  if (!td || !td.grantsExemption) return out;
+  const rot = td.disableRotate ? 0 : ((rotation % 4) + 4) % 4;
+  for (const [dx, dy] of td.grantsExemption) {
+    const [rx, ry] = rotateXY(dx, dy, rot);
+    out.push(`${row - ry},${col + rx}`);
+  }
+  return out;
 }

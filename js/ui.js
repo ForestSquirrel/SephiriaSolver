@@ -3,11 +3,18 @@
 
 // ── Sprite Helper ────────────────────────────────────────────────
 
+// Tablets are keyed by numeric id; items and merges carry an explicit path. One
+// helper so the five places that build a sprite URL don't each need to know that.
+function spriteUrl(id) {
+  const td = TABLET_MAP[id];
+  return td && td.sprite ? td.sprite : `sprites/${id}.png`;
+}
+
 function makeSpriteEl(id, size) {
   const wrap = document.createElement('div');
   wrap.style.cssText = `width:${size};height:${size};overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;`;
   const img = document.createElement('img');
-  img.src = `sprites/${id}.png`;
+  img.src = spriteUrl(id);
   img.style.cssText = 'width:100%;height:100%;image-rendering:pixelated;object-fit:cover;';
   img.onerror = function () {
     this.style.display = 'none';
@@ -43,8 +50,17 @@ function setTabletSortMode(mode) {
 
 function renderPicker() {
   const el = document.getElementById('tablet-picker');
+  const search = (document.getElementById('picker-search')?.value || '').toLowerCase();
+  const noTabletsFound = document.getElementById('no-tablets-found');
+  noTabletsFound.style.display = 'none';
   el.innerHTML = '';
-  const items = [...TABLETS_DATA.items];
+  const items = [...TABLETS_DATA.items].filter(
+    t => !search || t.name.toLowerCase().includes(search)
+  );
+  if (!items.length) {
+    noTabletsFound.style.display = 'block';
+    return;
+  }
   if (tabletSortMode === 'name') {
     items.sort((a, b) => a.name.localeCompare(b.name));
   } else {
@@ -107,7 +123,7 @@ function renderCollection() {
   const el  = document.getElementById('collection-list');
   el.innerHTML = '';
   const ids = Object.keys(collection).map(Number).filter(id => collection[id] > 0);
-  if (!ids.length && !mergedTablets.length) {
+  if (!ids.length && !mergedTablets.length && !solverItems.length) {
     el.innerHTML = '<div class="empty-collection">No tablets added yet.<br>Click any tablet above.</div>';
     return;
   }
@@ -266,6 +282,46 @@ function renderCollection() {
     });
     el.appendChild(item);
   }
+
+  // Items the solver is planning to place. They live here rather than in a panel of
+  // their own so picking one up off the grid has somewhere obvious to go back to —
+  // and so selecting one works through exactly the machinery tablets already use.
+  for (const e of solverItems) {
+    const def = itemDefOf(e.itemId);
+    if (!def) continue;
+    const token  = itemTokenId(e.uid);
+    const placed = Object.values(gridPlacements).filter(p => p.tabletId === token).length;
+
+    const item = document.createElement('div');
+    item.className = 'collection-item' + (selectedTabletId === token ? ' selected' : '');
+
+    const spr = makeSpriteEl(token, 'clamp(22px,1.9vw,36px)');
+    spr.className = 'spr';
+    item.appendChild(spr);
+
+    const info = document.createElement('div');
+    info.className = 'info';
+    const nm = document.createElement('div');
+    nm.className = 'name';
+    nm.textContent = def.name;
+    info.appendChild(nm);
+    const tags = document.createElement('div');
+    tags.className = 'tags';
+    tags.innerHTML = `<span class="tag tag-item">item</span> ` +
+      `<span style="color:var(--text-dim)">${placed ? 'on the grid' : 'not placed'}</span>`;
+    info.appendChild(tags);
+    item.appendChild(info);
+
+    item.addEventListener('click', () => {
+      selectedTabletId = selectedTabletId === token ? null : token;
+      selectedCellKey  = null;
+      selectedRotation = 0;
+      renderCollection();
+      renderGrid();
+      updateActiveBar();
+    });
+    el.appendChild(item);
+  }
 }
 
 function selectTabletFromCollection(id) {
@@ -294,6 +350,22 @@ function renderGrid() {
   gridEl.style.gridTemplateRows = `repeat(${renderRows}, var(--cell))`;
 
   const buffMap = computeBuffMap(gridPlacements, maxRow);
+
+  // Slots where a placed tablet lets an item ignore its position restriction. Cyan
+  // on the grid, matching the game.
+  const exemptCells = new Set();
+  for (const [k, p] of Object.entries(gridPlacements)) {
+    const td = TABLET_MAP[p.tabletId];
+    if (!td || !td.grantsExemption) continue;
+    const [r, c] = k.split(',').map(Number);
+    for (const ek of exemptCellsFor(td, c, r, p.rotation)) exemptCells.add(ek);
+  }
+
+  // Everything the user said they'd put in a slot but that the solver doesn't place
+  // itself — the Grimoire an Hourglass buffs, the Planets and Companions a Telescope
+  // or Insignia is holding slots for. Drawn faintly so the plan is visible on the grid
+  // instead of only in the dialog.
+  const ghosts = itemGhostCells(buffMap, gridPlacements, maxRow);
 
   const aoeMap = {};
   if (selectedCellKey && gridPlacements[selectedCellKey]) {
@@ -351,22 +423,37 @@ function renderGrid() {
         cell.classList.add('mark-target');
         cell.appendChild(makeMarkBadge('tgt', (t.op === 'eq' ? '=' : '≥') + t.value));
       }
+      if (exemptCells.has(key)) cell.classList.add('mark-exempt');
 
       const placement = gridPlacements[key];
       if (placement) {
         const td   = TABLET_MAP[placement.tabletId];
         const wrap = document.createElement('div');
+        const imgContainer = document.createElement('div');
+        imgContainer.className = 'img-container';
         wrap.className = 'cell-tablet' + (selectedCellKey === key ? ' selected-tablet' : '');
 
-        if (td.spriteA !== undefined) {
+        if (td.kind === 'item') {
+          const img = document.createElement('img');
+          img.src = spriteUrl(placement.tabletId);
+          img.alt = '';
+          img.style.cssText = 'width:100%;height:100%;object-fit:cover;image-rendering:pixelated;pointer-events:none;';
+          img.onerror = function () {
+            this.style.display = 'none';
+            const fb = document.createElement('span');
+            fb.className = 'fallback-grid';
+            fb.textContent = td.name.substring(0, 8);
+            imgContainer.insertBefore(fb, imgContainer.firstChild);
+          };
+          imgContainer.appendChild(img);
+        } else if (td.spriteA !== undefined) {
           // Merged tablet — two sprites side by side
-          wrap.style.flexDirection = 'row';
           [td.spriteA, td.spriteB].forEach(sid => {
             const img = document.createElement('img');
             img.src = `sprites/${sid}.png`;
             img.style.cssText = 'width:50%;height:100%;object-fit:cover;image-rendering:pixelated;pointer-events:none;';
             img.onerror = function () { this.style.display = 'none'; };
-            wrap.appendChild(img);
+            imgContainer.appendChild(img);
           });
         } else {
           const img = document.createElement('img');
@@ -378,18 +465,50 @@ function renderGrid() {
             const fb = document.createElement('span');
             fb.className = 'fallback-grid';
             fb.textContent = td.name.substring(0, 8);
-            wrap.insertBefore(fb, wrap.firstChild);
+            imgContainer.insertBefore(fb, imgContainer.firstChild);
           };
-          wrap.appendChild(img);
+          imgContainer.appendChild(img);
         }
 
+        const isItem = td.kind === 'item';
         const badge = document.createElement('span');
-        badge.className = 'rot-badge' + (placement.rotation === 0 ? ' hidden' : '');
+        // Items never rotate, so the badge and the transform are tablet-only.
+        badge.className = 'rot-badge' + (isItem || placement.rotation === 0 ? ' hidden' : '');
         badge.textContent = ['↑', '→', '↓', '←'][placement.rotation];
+        if (!isItem) imgContainer.style.transform = 'rotate(' + (placement.rotation * 90) + 'deg)';
+        wrap.appendChild(imgContainer);
         wrap.appendChild(badge);
         cell.appendChild(wrap);
 
-        if (!checkActivation(td, col, row, maxRow)) {
+        if (isItem) {
+          cell.classList.add('cell-item');
+          const cfg  = itemPlan && itemPlan[placement.tabletId];
+          const v    = buffMap[key] || 0;
+          const full = cfg ? cfg.full : null;
+          // An item is only dead in a NEGATIVE slot. At 0 it works, just not to its
+          // full potential — so the badge shows how far along it is instead of the
+          // grid greying out something that is in fact doing its job.
+          const state = full === null ? 'partial' : itemState(v, full);
+          cell.classList.add(`item-${state}`);
+          if (state === 'inactive') {
+            cell.style.opacity = '0.45';
+            cell.title = `${td.name} — INACTIVE: this slot is at ${v} and anything below 0 does nothing.`;
+          } else {
+            cell.title = full === null ? td.name
+              : state === 'full'
+              ? `${td.name} — at full potential (slot ${v >= 0 ? '+' : ''}${v} / ${full})`
+              : `${td.name} — working at reduced power (slot ${v >= 0 ? '+' : ''}${v} / ${full})`;
+          }
+          // Always shown, not only when short: seeing 4/4 or 7/5 is how you know the
+          // item is actually done, and a badge that appears only on failure reads as
+          // an error marker rather than a readout.
+          if (full !== null) {
+            const badge = document.createElement('span');
+            badge.className = `item-slot-badge ${state}`;
+            badge.textContent = `${v}/${full}`;
+            wrap.appendChild(badge);
+          }
+        } else if (!checkActivation(td, col, row, maxRow)) {
           cell.style.opacity = '0.45';
           cell.title = `${td.name} — INACTIVE (needs edge: ${td.activationPosition.join('/')})`;
         } else {
@@ -398,6 +517,16 @@ function renderGrid() {
         if (markMode) cell.addEventListener('click', () => toggleMark(key));
         else          cell.addEventListener('click', () => clickPlacedTablet(key));
       } else {
+        if (ghosts[key]) {
+          const gh = document.createElement('img');
+          gh.className = 'cell-ghost';
+          gh.src = `itemSprites/${encodeURIComponent(ghosts[key])}.png`;
+          gh.alt = '';
+          gh.title = `${ghosts[key]} goes here — the solver is keeping this slot free for it`;
+          gh.onerror = function () { this.style.display = 'none'; };
+          cell.appendChild(gh);
+          cell.classList.add('cell-reserved');
+        }
         const v      = buffMap[key] || 0;
         const buffEl = document.createElement('span');
         buffEl.className  = 'cell-buff ' + (v > 0 ? 'pos' : v < 0 ? 'neg' : 'zero');
@@ -556,13 +685,22 @@ function updateStats(buffMap, maxRow) {
   const total = activeEmptyCells(gridPlacements, maxRow)
     .reduce((a, { key }) => a + (buffMap[key] || 0), 0);
 
+  const placedTablets = Object.values(gridPlacements)
+    .filter(p => TABLET_MAP[p.tabletId]?.kind !== 'item').length;
+
   document.getElementById('stat-total').textContent  = (total >= 0 ? '+' : '') + total;
-  document.getElementById('stat-placed').textContent = Object.keys(gridPlacements).length;
+  document.getElementById('stat-placed').textContent = placedTablets;
   document.getElementById('stat-grid').textContent   = `6×${BASE_ROWS} +${expandedSlots}`;
 
   const { met, tot } = pinStats(buffMap, gridPlacements);
   document.getElementById('stat-pins-wrap').style.display = tot ? '' : 'none';
   document.getElementById('stat-pins').textContent = `${met}/${tot}`;
+
+  const items = itemStats(buffMap, gridPlacements, maxRow);
+  document.getElementById('stat-items-wrap').style.display = items.tot ? '' : 'none';
+  // "Active" is the honest headline: an item only does nothing in a negative slot.
+  document.getElementById('stat-items').textContent =
+    `${items.active}/${items.tot}` + (items.full < items.active ? ` · ${items.full} full` : '');
 }
 
 // How many pinned slots currently hold their desired value.
@@ -590,8 +728,12 @@ function resultStats(placements, buffMap, maxRow) {
     if (v > 0) covered++;
     dist[v] = (dist[v] || 0) + 1;
   }
-  const pins = pinStats(buffMap, placements);
-  return { total, covered, slots, dist, pinsMet: pins.met, pinsTot: pins.tot };
+  const pins  = pinStats(buffMap, placements);
+  const items = itemStats(buffMap, placements, maxRow);
+  return { total, covered, slots, dist,
+           pinsMet:     pins.met,     pinsTot:  pins.tot,
+           itemsActive: items.active, itemsFull: items.full,
+           itemsTot:    items.tot,    itemsUnplaced: items.unplaced };
 }
 
 // ── Active Tablet Bar ────────────────────────────────────────────
@@ -706,7 +848,9 @@ function setEngine(engine) {
 function updateEngineUI() {
   const legacy = solverEngine === 'legacy';
   document.getElementById('mode-btns').style.display      = legacy ? 'grid' : 'none';
-  document.getElementById('rules-open-btn').style.display = legacy ? 'none' : 'block';
+  // Items are scored by both engines, so the dialog stays reachable in Legacy too —
+  // it just shows the items half and hides the slot rules.
+  document.getElementById('rules-open-btn').style.display = 'block';
   // Both value inputs are legacy-only — ruleset mode never asks for a bare number,
   // it derives Rest/Maximize's ceiling from the rules (or maximizes raw buff).
   document.getElementById('target-row').style.display  = legacy && solveMode === 'target'   ? 'flex' : 'none';
@@ -717,7 +861,15 @@ function updateEngineUI() {
 function updateRulesBtn() {
   const btn = document.getElementById('rules-open-btn');
   if (!btn) return;
-  btn.textContent = rules.length ? `Manage Rules (${rules.length})` : 'Manage Rules';
+  const nItems = solverItems.length;
+  if (solverEngine === 'legacy') {
+    btn.textContent = nItems ? `Items (${nItems})` : 'Items';
+    return;
+  }
+  const parts = [];
+  if (rules.length) parts.push(`${rules.length} rule${rules.length === 1 ? '' : 's'}`);
+  if (nItems)       parts.push(`${nItems} item${nItems === 1 ? '' : 's'}`);
+  btn.textContent = parts.length ? `Manage Rules (${parts.join(' · ')})` : 'Manage Rules';
 }
 
 // ── Search budget & progress ─────────────────────────────────────
@@ -772,20 +924,38 @@ function renderResults() {
   }
   const maxRow = totalRows();
 
+  // Describe whichever layout is actually on the grid, not always the first one:
+  // applying option 3 and then reading a warning about option 1 is worse than no
+  // warning at all. Falls back to the top result when nothing has been applied yet.
+  const shownIdx = appliedResultIdx >= 0 && solverResults[appliedResultIdx] ? appliedResultIdx : 0;
+  const best     = solverResults[shownIdx];
+  const which    = appliedResultIdx >= 0 ? `Option ${shownIdx + 1}` : `Option 1`;
+
   // The search can't prove a ruleset impossible — only fail to find a layout — so
   // say that, rather than presenting a short result as a clean win.
-  const best = solverResults[0];
   if (best && best.ruleBreakdown && !best.rulesSatisfied) {
     const missed = best.ruleBreakdown.filter(b => !b.satisfied);
     const banner = document.createElement('div');
     banner.className = 'rules-banner';
-    let html = '<b>Rules partially satisfied</b><br>Couldn\'t find a placement that meets:<br>';
+    let html = `<b>${which}: rules partially satisfied</b><br>This layout doesn't meet:<br>`;
     for (const m of missed)
       html += `· Rule ${m.idx} needs ${COUNT_OP_LABEL[m.countOp].toLowerCase()} ` +
               `${m.required} slots at ${VALUE_OP_LABEL[m.valueOp]}${m.value}, best attempt found ${m.matched}<br>`;
     const floor = guaranteedEmptySlots();
     if (missed.some(m => m.required > floor * 0.75))
       html += '<span class="rules-banner-hint">This ruleset is very tight for your current slot count.</span>';
+    banner.innerHTML = html;
+    el.appendChild(banner);
+  }
+
+  // Same treatment for items: an item that ended up somewhere useless, or that never
+  // got placed at all, used to fail completely silently.
+  if (best && best.itemBreakdown && !best.itemsSatisfied) {
+    const bad = best.itemBreakdown.filter(b => !b.satisfied);
+    const banner = document.createElement('div');
+    banner.className = 'rules-banner';
+    let html = `<b>${which}: items partially satisfied</b><br>`;
+    for (const b of bad) html += '· ' + itemProblemText(b) + '<br>';
     banner.innerHTML = html;
     el.appendChild(banner);
   }
@@ -864,13 +1034,55 @@ function applyResult(idx) {
   setLog(`Applied Option ${idx + 1}`, 'ok');
 }
 
+// Plain-language "what went wrong with this item", most important cause first.
+function itemProblemText(b) {
+  if (!b.placed)
+    return `<b>${b.name}</b> couldn't be placed anywhere legal at all.`;
+
+  if (b.self.state === 'inactive')
+    return `<b>${b.name}</b> is sitting in a slot at ${b.self.v}, and anything below 0 does nothing.`;
+
+  if (!b.classOk && !b.exempted) {
+    if (b.posClass === 'rowphase') {
+      const phases = (ITEMS_DATA && ITEMS_DATA.phases) || [];
+      const got = phases[(b.row - 1) % 4], want = phases[b.phase];
+      return `<b>${b.name}</b> ended up in row ${b.row} — that's ${got}, and you asked for ${want}.`;
+    }
+    return `<b>${b.name}</b> ended up outside ${POS_CLASS_LABEL[b.posClass] || 'the slots it needs'}.`;
+  }
+
+  if (b.self.hard && b.self.v < b.self.want)
+    return `<b>${b.name}</b>'s slot reached ${b.self.v >= 0 ? '+' : ''}${b.self.v}, short of the ${b.self.want} you asked for` +
+           (b.self.state === 'partial' ? ' — it still works, just not at full potential.' : '.');
+
+  const pin = b.pins.find(p => p.hard && !p.met);
+  if (pin)
+    return `<b>${b.name}</b>: the slot it buffs reached ${pin.v === null ? 'nothing' : (pin.v >= 0 ? '+' : '') + pin.v}, short of ${pin.want}.`;
+
+  if (b.region && b.region.kind === 'entities') {
+    const miss = b.region.entities.filter(e => !e.met);
+    if (miss.length)
+      return `<b>${b.name}</b>: no room or not enough buff for ` +
+             miss.map(e => `${e.name} (needs ${e.want}${e.v === null ? ', got no slot' : `, slot at ${e.v}`})`).join(', ') + '.';
+  }
+  if (b.region && b.region.kind === 'keepClear' && !b.region.met)
+    return `<b>${b.name}</b>: only ${b.region.free} of the ${b.region.need} slots it needs are free of tablets.`;
+
+  return `<b>${b.name}</b> didn't meet everything you asked of it.`;
+}
+
 // ── Tooltip ──────────────────────────────────────────────────────
 
 function showTooltip(e, t) {
   const tip = document.getElementById('tooltip');
   let html = `<b>${t.name}</b>`;
   if (t.disableRotate)    html += `<span style="color:var(--text-dim)">Cannot rotate</span><br>`;
-  if (t.activationPosition) html += `<span style="color:var(--teal)">Edge: ${t.activationPosition.join(', ')}</span><br>`;
+  if (t.activationPosition) html += `<span style="color:var(--violet)">Edge: ${t.activationPosition.join(', ')}</span><br>`;
+  if (t.grantsExemption) {
+    const where = t.grantsExemption
+      .map(([x, y]) => y > 0 ? 'above' : y < 0 ? 'below' : x > 0 ? 'right' : 'left').join(', ');
+    html += `<span style="color:var(--teal)">Lets an item ignore its slot restriction — ${where}</span><br>`;
+  }
   if (t.effects)   for (const [x, y, b] of t.effects)
     html += `<span style="color:${b > 0 ? 'var(--green)' : 'var(--red)'}">${b > 0 ? '+' : ''}${b}</span> at (${x > 0 ? '+' : ''}${x}, ${y > 0 ? '+' : ''}${y})<br>`;
   if (t.lineBuff)  for (const lb of t.lineBuff)

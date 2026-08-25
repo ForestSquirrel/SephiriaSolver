@@ -1,0 +1,196 @@
+{
+	"name": "Items",
+	"version": 1,
+	"_comment": "Offsets use the same convention as tablets.json effects: [dx, dy] where +dx is right and +dy is UP (applied as row - dy).",
+	"items": [
+		{
+			"id": "cold_lock",
+			"name": "Cold Lock",
+			"sprite": "Cold Lock",
+			"value": 4,
+			"exclude": [[-1, 0], [1, 0]],
+			"note": "Needs its left and right neighbours empty."
+		},
+		{
+			"id": "chalcedony_key",
+			"name": "Chalcedony Key",
+			"sprite": "Chalcedony Key",
+			"value": 3,
+			"posClass": "rowphase",
+			"config": ["phase"],
+			"note": "Effect depends on the row, cycling Sturdy / Ember / Glacier / Magitech every 4 rows."
+		},
+		{
+			"id": "white_paper",
+			"name": "White Paper",
+			"sprite": "White Paper",
+			"value": 1,
+			"pins": [
+				{ "dx": -1, "dy": 0, "group": "either" },
+				{ "dx":  1, "dy": 0, "group": "either" }
+			],
+			"note": "Buffs both horizontal neighbours. The two values are not tied to a side — the solver takes the better assignment."
+		},
+		{
+			"id": "golden_needle",
+			"name": "Golden Needle of the North",
+			"sprite": "Golden Needle of the North",
+			"value": 2,
+			"pins": [
+				{ "dx": 0, "dy": 1, "label": "above", "glyph": "↑" }
+			],
+			"note": "Buffs the cell above."
+		},
+		{
+			"id": "multipurpose_belt",
+			"name": "Multipurpose Belt",
+			"sprite": "Multipurpose Belt",
+			"value": 3,
+			"posClass": "bottom",
+			"scope": "topRow",
+			"region": { "kind": "keepClear" },
+			"note": "Bottom row only; scales with the ITEMS in the top row, so it keeps that row free of tablets. Items are welcome there — confirmed in-game."
+		},
+		{
+			"id": "scabbard_of_exorcism",
+			"name": "Scabbard of Exorcism",
+			"sprite": "Scabbard of Exorcism",
+			"value": 6,
+			"posClass": "outermost",
+			"note": "Active only on outermost cells."
+		},
+		{
+			"id": "rylies_pocket_watch",
+			"name": "Rylie's Pocket Watch",
+			"sprite": "Rylie's Pocket Watch",
+			"value": 2,
+			"posClass": "bottom",
+			"note": "Active only in the lowest slot."
+		},
+		{
+			"id": "giant_telescope",
+			"name": "Giant Telescope",
+			"sprite": "Giant Telescope",
+			"value": 1,
+			"scope": "neighbors8",
+			"region": { "kind": "entities", "roster": "planets" },
+			"note": "Improves Planets in the 8 surrounding slots. Pick the Planets you mean to put there and that many slots are reserved and pushed to their values."
+		},
+		{
+			"id": "warm_stone",
+			"name": "Warm Stone",
+			"sprite": "Warm Stone",
+			"value": 3,
+			"posClass": "innermost",
+			"note": "Active only on inner (non-outermost) cells."
+		},
+		{
+			"id": "devotion_insignia",
+			"name": "Devotion Insignia",
+			"sprite": "Devotion Insignia",
+			"value": 3,
+			"scope": "ownRow",
+			"region": { "kind": "entities", "roster": "companions" },
+			"note": "Improves Companions in the same row. Pick the Companions you mean to put there and that many slots are reserved and pushed to their values."
+		},
+		{
+			"id": "magic_carrot",
+			"name": "Magic Carrot",
+			"sprite": "Magic Carrot",
+			"value": 4,
+			"posClass": "top",
+			"note": "Active only in the top row."
+		},
+		{
+			"id": "green_ink_bottle",
+			"name": "Green Ink Bottle",
+			"sprite": "Green Ink Bottle",
+			"value": 3,
+			"posClass": "right",
+			"note": "Active only in the rightmost column."
+		},
+		{
+			"id": "silver_plate",
+			"name": "Silver Plate",
+			"sprite": "Silver Plate",
+			"value": 2,
+			"posClass": "bottom",
+			"note": "Active only in the bottom row."
+		},
+		{
+			"id": "sword_training_manual",
+			"name": "Sword Training Manual",
+			"sprite": "Sword Training Manual",
+			"value": 2,
+			"posClass": "top",
+			"note": "Active only in the top row."
+		},
+		{
+			"id": "keel_fragment",
+			"name": "Keel Fragment",
+			"sprite": "Keel Fragment",
+			"value": 3,
+			"posClass": "outermost",
+			"note": "Active only on outermost slots."
+		},
+		{
+			"id": "crystal_of_harmony",
+			"name": "Crystal of Harmony",
+			"sprite": "Crystal of Harmony",
+			"value": 1,
+			"scope": "neighbors8",
+			"region": { "kind": "neighborBuff" },
+			"placement": "posthoc",
+			"note": "Works better the more total buff its 8 neighbouring slots hold. Slots with a tablet on them don't count; empty slots and slots holding other items do. Placed after the solve rather than during it."
+		},
+		{
+			"id": "glowing_hourglass",
+			"name": "Glowing Hourglass",
+			"sprite": "Glowing Hourglass",
+			"value": 2,
+			"pins": [
+				{ "dx": 1, "dy": 0, "label": "right", "glyph": "→", "grimoire": true }
+			],
+			"note": "Buffs the Grimoire to its right."
+		}
+	],
+	"phases": ["Sturdy", "Ember", "Glacier", "Magitech"],
+	"planets": [
+		{ "name": "Blue Planet", "value": 5 },
+		{ "name": "Yellow Planet", "value": 6 },
+		{ "name": "Red Planet", "value": 6 },
+		{ "name": "Sky Blue Planet", "value": 5 },
+		{ "name": "Dark Planet", "value": 4 },
+		{ "name": "Ashen Planet", "value": 5 },
+		{ "name": "White Planet", "value": 7 }
+	],
+	"companions": [
+		{ "name": "Golden Handbell", "value": 4 },
+		{ "name": "Mini Ballista", "value": 4 },
+		{ "name": "Hiring Crest Collin", "value": 2 },
+		{ "name": "Ahmad's Spirit Powder", "value": 4 },
+		{ "name": "Tero's Spirit Powder", "value": 4 },
+		{ "name": "Heita's Spirit Powder", "value": 4 },
+		{ "name": "Flux Coupler Mk.2", "value": 3 },
+		{ "name": "Mining Supervisor Armband", "value": 4 }
+	],
+	"grimoires": [
+		{ "name": "Blessing", "value": 2 },
+		{ "name": "Smoke Screen", "value": 0 },
+		{ "name": "Rain of Arrows", "value": 3 },
+		{ "name": "Frost Dagger", "value": 4 },
+		{ "name": "Ice Bolt", "value": 1 },
+		{ "name": "Haste", "value": 2 },
+		{ "name": "Great Blessing", "value": 2 },
+		{ "name": "Lightning Bolt", "value": 1 },
+		{ "name": "Lightning Boomerang", "value": 4 },
+		{ "name": "Thunder Armor", "value": 4 },
+		{ "name": "Judgement of Thunder", "value": 4 },
+		{ "name": "Sharp Eye", "value": 2 },
+		{ "name": "Fire Bolt", "value": 4 },
+		{ "name": "Fire Arrow", "value": 2 },
+		{ "name": "Meteor Shower", "value": 3 },
+		{ "name": "Fire Circus", "value": 3 },
+		{ "name": "Shield", "value": 1 }
+	]
+}
