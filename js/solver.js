@@ -16,8 +16,10 @@ async function runSolver() {
   await new Promise(r => setTimeout(r, 10)); // let UI repaint
 
   const maxRow    = totalRows();
-  const targetVal = parseInt(document.getElementById('target-val').value) || 3;
-  const highVal   = parseInt(document.getElementById('highval-val').value) || 5;
+  const parsedTarget = Number.parseInt(document.getElementById('target-val').value, 10);
+  const parsedHigh   = Number.parseInt(document.getElementById('highval-val').value, 10);
+  const targetVal = Number.isNaN(parsedTarget) ? 3 : parsedTarget;
+  const highVal   = Number.isNaN(parsedHigh)   ? 5 : parsedHigh;
 
   const usingRules = solverEngine === 'ruleset';
   if (usingRules) {

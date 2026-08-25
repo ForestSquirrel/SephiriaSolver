@@ -113,6 +113,9 @@ function computeBuffMap(placements, maxRow) {
     const [r, c] = key.split(',').map(Number);
     const td = TABLET_MAP[tabletId];
     if (!td) continue;
+    // Manually placed tablets may sit outside their required edge. Keep the
+    // placement visible, but inactive tablets must not contribute any buffs.
+    if (!checkActivation(td, c, r, maxRow)) continue;
     for (const { col, row, buff } of getTabletContributions(td, c, r, rotation, maxRow)) {
       if (row < 1 || row > maxRow || col < 1 || col > COLS) continue;
       if (!isActiveCell(row, col)) continue;

@@ -6,7 +6,7 @@
   "scripts": {
     "lint:html": "html-validate --formatter stylish \"**/*.html\"",
     "lint:js": "eslint \"js/*.js\" \".github/scripts/*.js\"",
-    "check:syntax": "find . -name \"*.js\" -not -path \"./node_modules/*\" -print0 | xargs -0 -n1 node --check",
+    "check:syntax": "node .github/scripts/check-syntax.js",
     "check:links": "node .github/scripts/check-links.js",
     "check": "npm run lint:html && npm run check:syntax && npm run lint:js && npm run check:links"
   },

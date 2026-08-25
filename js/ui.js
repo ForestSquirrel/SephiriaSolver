@@ -138,7 +138,13 @@ function renderCollection() {
     minus.textContent = '−';
     minus.addEventListener('click', e => {
       e.stopPropagation();
-      if (cnt > 1) { collection[id]--; renderCollection(); }
+      if (cnt <= 1) return;
+      if (cnt - 1 < placed) {
+        setLog('Pick up a placed copy before reducing the collection count', 'err');
+        return;
+      }
+      collection[id]--;
+      renderCollection();
     });
     const valEl = document.createElement('span');
     valEl.className = 'count-val';
@@ -156,8 +162,15 @@ function renderCollection() {
     rem.title = 'Remove from collection';
     rem.addEventListener('click', e => {
       e.stopPropagation();
+      for (const [key, p] of Object.entries(gridPlacements))
+        if (p.tabletId === id) delete gridPlacements[key];
       delete collection[id];
-      if (selectedTabletId === id) { selectedTabletId = null; updateActiveBar(); }
+      if (selectedTabletId === id) {
+        selectedTabletId = null;
+        selectedCellKey  = null;
+        selectedRotation = 0;
+        updateActiveBar();
+      }
       renderCollection();
       renderGrid();
     });
