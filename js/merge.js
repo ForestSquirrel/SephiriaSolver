@@ -286,7 +286,7 @@ function previewContributions(td, cx, cy, rot, size) {
         const tc = ref === 'right' ? size : ref === 'self' ? cx : 1;
         for (let row = 1; row <= size; row++) out.push({ col: tc, row, buff });
       } else if (axis === 'diagonal') {
-        const diag0 = (r === 0 || r === 2);
+        const diag0 = ((r % 2 === 0) !== !!lb.diagFlip);
         for (let row = 1; row <= size; row++)
           for (let col = 1; col <= size; col++)
             if (diag0 ? col + row === cx + cy : col - row === cx - cy)

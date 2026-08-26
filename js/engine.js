@@ -94,7 +94,9 @@ function getTabletContributions(td, col, row, rotation, maxRow) {
         const tc = ref === 'self' ? col : ref === 'left' ? 1 : COLS;
         for (let r = 1; r <= maxRow; r++) out.push({ col: tc, row: r, buff });
       } else if (axis === 'diagonal') {
-        const diag0 = (rot === 0 || rot === 2);
+        // 90°/270° flips which diagonal is drawn. A merged tablet has no distinct
+        // axis name for that, so it bakes its source's parity into diagFlip.
+        const diag0 = ((rot % 2 === 0) !== !!lb.diagFlip);
         for (let r = 1; r <= maxRow; r++)
           for (let c = 1; c <= COLS; c++)
             if (diag0 ? c + r === col + row : c - r === col - row)
@@ -201,9 +203,14 @@ function createMergedTablet(tdA, rotA, tdB, rotB) {
     if (!td.lineBuff) return;
     for (const lb of td.lineBuff) {
       let axis = lb.axis;
+      let diagFlip = !!lb.diagFlip;
       if (lb.ref === 'self' && rot % 2 === 1)
         axis = axis === 'row' ? 'column' : axis === 'column' ? 'row' : axis;
-      lineBuff.push({ axis, ref: lb.ref, buff: lb.buff });
+      // The diagonal has no swapped-axis name to bake into, so record the source's
+      // rotation parity instead — otherwise the merged tablet always draws the
+      // rotation-0 diagonal regardless of how the source was rotated here.
+      if (axis === 'diagonal' && rot % 2 === 1) diagFlip = !diagFlip;
+      lineBuff.push({ axis, ref: lb.ref, buff: lb.buff, ...(diagFlip ? { diagFlip: true } : {}) });
     }
   }
   bakeLineBuff(tdA, rotA);
