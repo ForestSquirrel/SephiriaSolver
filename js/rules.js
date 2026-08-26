@@ -150,6 +150,7 @@ function applyRules() {
   restTarget = ruleRestTgt;
   solverItems = itemDraft.map(cloneItemEntry);
   itemNextUid = itemDraftUid;
+  invalidateSolverResults();
   // Each copy is its own TABLET_MAP token — same point merges register theirs.
   registerSolverItems(solverItems);
   installItemPlan(solverItems);
@@ -269,7 +270,7 @@ function ruleNumber(value, min, max, onChange) {
   inp.addEventListener('input', () => {
     // Empty / mid-edit input parses to NaN — let validation report it rather
     // than silently substituting a number the user never typed.
-    onChange(inp.value === '' ? NaN : parseInt(inp.value, 10));
+    onChange(inp.valueAsNumber);
   });
   return inp;
 }
